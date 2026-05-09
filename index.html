@@ -456,19 +456,26 @@ if ('serviceWorker' in navigator) {
 
 // ══ LOGIN ══
 function doLogin() {
-  const user = document.getElementById('login-user').value.trim().toLowerCase();
-  const pass = document.getElementById('login-pass').value;
-  // Demo: admin/admin o cualquier usuario con pass "1234"
-  // En producción esto se valida contra la hoja 04 — Representantes via Google Sheets API
-  const isAdmin = user === 'admin' && pass === 'admin';
-  const isRep = pass === '1234' && user.length > 0;
-  if (isAdmin || isRep) {
-    SESSION = { user, name: isAdmin ? 'Administrador' : user, role: isAdmin ? 'admin' : 'rep', zona: isAdmin ? 'Todas' : 'Zona Sur' };
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value.trim();
+  const err  = document.getElementById('login-error');
+  if (err) err.style.display = 'none';
+  if (!user || !pass) {
+    if (err) { err.innerText = 'Ingresá usuario y contraseña.'; err.style.display = ''; }
+    return;
+  }
+  // Admin
+  if (user.toLowerCase() === 'admin' && pass === 'admin') {
+    SESSION = { user: 'admin', name: 'Administrador', role: 'admin', zona: 'Todas' };
     localStorage.setItem('cg_session', JSON.stringify(SESSION));
     bootApp();
-  } else {
-    document.getElementById('login-error').style.display = 'block';
+    return;
   }
+  // Rep: guardar credenciales y pedir token para validar contra Representantes
+  window._repPendingUser = user;
+  window._repPendingPass = pass;
+  toast('Verificando credenciales...');
+  loginGoogle();
 }
 
 // ── Variables de estado del token Google ──
@@ -496,22 +503,23 @@ function doLogin() {
   }
 
   function loginGoogle() {
-      if (!CONFIG.GOOGLE_CLIENT_ID || CONFIG.GOOGLE_CLIENT_ID.includes('TU_CLIENT_ID')) {
-            toast('Completá GOOGLE_CLIENT_ID en CONFIG');
-            return;
-      }
-      if (!_tokenClient) { toast('Google cargando, reintentá...'); return; }
-      new Promise((resolve) => {
-            _pendingResolve = resolve;
-            _tokenClient.requestAccessToken({ prompt: 'consent' });
-      }).then(token => {
-            if (!token) { toast('No se pudo autenticar con Google'); return; }
-            SESSION = { user: 'google_user', name: 'Usuario Google', role: 'rep', zona: 'Mi Zona' };
-            localStorage.setItem('cg_session', JSON.stringify(SESSION));
-            bootApp();
-            toast('Sesión iniciada con Google ✓');
-      });
+  if (!CONFIG.GOOGLE_CLIENT_ID || CONFIG.GOOGLE_CLIENT_ID.includes('TU_CLIENT_ID')) {
+    toast('Completá GOOGLE_CLIENT_ID en CONFIG'); return;
   }
+  if (!_tokenClient) { toast('Google cargando, reintentá...'); return; }
+  _tokenClient.requestAccessToken({
+    callback: async (resp) => {
+      if (resp && resp.error) { toast('Error Google: ' + resp.error); return; }
+      if (window._repPendingUser) {
+        await validarYCompletarLoginRep();
+      } else {
+        SESSION = { user: 'google', name: 'Administrador', role: 'admin', zona: 'Todas' };
+        localStorage.setItem('cg_session', JSON.stringify(SESSION));
+        bootApp();
+      }
+    }
+  });
+}
 
 function doLogout() {
   localStorage.removeItem('cg_session');
@@ -533,6 +541,42 @@ function bootApp() {
 }
 
 // ══ SINCRONIZAR PRECIOS DESDE SHEETS ══
+async function validarYCompletarLoginRep() {
+  const user = window._repPendingUser;
+  const pass = window._repPendingPass;
+  window._repPendingUser = null;
+  window._repPendingPass = null;
+  try {
+    const token = await getGoogleToken();
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_REPRESENTANTES}/values/Representantes!A:F?access_token=${token}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const rows = (data.values || []).slice(1);
+    // Cols: A=Usuario B=Nombre C=Zona D=Contraseña E=Activo
+    const rep = rows.find(r =>
+      (r[0]||'').toLowerCase() === user.toLowerCase() &&
+      (r[3]||'') === pass &&
+      (r[4]||'SI').toUpperCase() !== 'NO'
+    );
+    const errEl = document.getElementById('login-error');
+    if (!rep) {
+      if (errEl) { errEl.innerText = 'Usuario o contraseña incorrectos.'; errEl.style.display = ''; }
+      document.getElementById('screen-login').classList.add('active');
+      document.getElementById('screen-app').classList.remove('active');
+      return;
+    }
+    SESSION = { user: rep[0]||user, name: rep[1]||user, zona: rep[2]||'Sin zona', role: 'rep' };
+    localStorage.setItem('cg_session', JSON.stringify(SESSION));
+    bootApp();
+  } catch(e) {
+    console.error('validarYCompletarLoginRep error:', e);
+    toast('Error de conexión. Reintentá.');
+    document.getElementById('screen-login').classList.add('active');
+    document.getElementById('screen-app').classList.remove('active');
+  }
+}
+
 async function sincronizarPrecios() {
   const badge = document.getElementById('sync-badge');
   badge.className = 'sync-badge loading';

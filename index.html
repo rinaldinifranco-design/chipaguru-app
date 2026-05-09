@@ -563,7 +563,7 @@ async function sincronizarPrecios() {
   }
 }
 
-hasync function getGoogleToken() {
+async function getGoogleToken() {
     if (!_tokenClient) return null;
     if (_accessToken && Date.now() < _tokenExpiry) return _accessToken;
     return new Promise((resolve) => {

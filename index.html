@@ -571,7 +571,7 @@ async function getGoogleToken() {
           _tokenClient.requestAccessToken({ prompt: '' });
     });
 }
-  const s = lastState;
+  async function cerrarJornada() {  const s = lastState;
   const fila = [
     'SAL' + Date.now(),
     s.fecha,

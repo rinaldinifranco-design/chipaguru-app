@@ -11,7 +11,9 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-<style>
+  <!-- Google Identity Services — OAuth 2.0 para Sheets API -->
+  <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleAuth()"></script>
+<style>h
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --brand:#F0C97E;--brand-dark:#C9A055;--brand-darker:#A07830;
@@ -469,9 +471,47 @@ function doLogin() {
   }
 }
 
-function loginGoogle() {
-  toast('Google OAuth: configurar CLIENT_ID en CONFIG');
-}
+// ── Variables de estado del token Google ──
+  let _tokenClient = null;
+  let _accessToken = null;
+  let _tokenExpiry = 0;
+  let _pendingResolve = null;
+
+  // Se llama automáticamente cuando carga el script de GIS
+  function initGoogleAuth() {
+      if (!CONFIG.GOOGLE_CLIENT_ID || CONFIG.GOOGLE_CLIENT_ID.includes('TU_CLIENT_ID')) return;
+      _tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CONFIG.GOOGLE_CLIENT_ID,
+            scope: 'https://www.googleapis.com/auth/spreadsheets',
+            callback: (resp) => {
+                    if (resp.error) {
+                              if (_pendingResolve) { _pendingResolve(null); _pendingResolve = null; }
+                              return;
+                    }
+                    _accessToken = resp.access_token;
+                    _tokenExpiry = Date.now() + (parseInt(resp.expires_in, 10) - 60) * 1000;
+                    if (_pendingResolve) { _pendingResolve(_accessToken); _pendingResolve = null; }
+            }
+      });
+  }
+
+  function loginGoogle() {
+      if (!CONFIG.GOOGLE_CLIENT_ID || CONFIG.GOOGLE_CLIENT_ID.includes('TU_CLIENT_ID')) {
+            toast('Completá GOOGLE_CLIENT_ID en CONFIG');
+            return;
+      }
+      if (!_tokenClient) { toast('Google cargando, reintentá...'); return; }
+      new Promise((resolve) => {
+            _pendingResolve = resolve;
+            _tokenClient.requestAccessToken({ prompt: 'consent' });
+      }).then(token => {
+            if (!token) { toast('No se pudo autenticar con Google'); return; }
+            SESSION = { user: 'google_user', name: 'Usuario Google', role: 'rep', zona: 'Mi Zona' };
+            localStorage.setItem('cg_session', JSON.stringify(SESSION));
+            bootApp();
+            toast('Sesión iniciada con Google ✓');
+      });
+  }
 
 function doLogout() {
   localStorage.removeItem('cg_session');
@@ -511,7 +551,7 @@ async function sincronizarPrecios() {
         pventa: parseFloat(r[3]) || 0,
         costo: parseFloat(r[4]) || 0,
         bonus: r[6] === 'SI',
-      })).filter(p => r[7] === 'SI' || true);
+      }));
       toast('Precios actualizados desde Sheets ✓');
     }
     badge.className = 'sync-badge ok';
@@ -523,15 +563,14 @@ async function sincronizarPrecios() {
   }
 }
 
-async function getGoogleToken() {
-  // Retorna el token de Google si el usuario está autenticado con OAuth
-  // Por ahora retorna null (se implementa con Google Identity Services)
-  return null;
+hasync function getGoogleToken() {
+    if (!_tokenClient) return null;
+    if (_accessToken && Date.now() < _tokenExpiry) return _accessToken;
+    return new Promise((resolve) => {
+          _pendingResolve = resolve;
+          _tokenClient.requestAccessToken({ prompt: '' });
+    });
 }
-
-// ══ CERRAR JORNADA → GUARDAR EN SHEETS ══
-async function cerrarJornada() {
-  if (!lastState.nCli) { toast('Cargá clientes antes de cerrar'); return; }
   const s = lastState;
   const fila = [
     'SAL' + Date.now(),
@@ -956,7 +995,7 @@ function generarPedidoFabrica() {
   ).join('');
   const totalCosto = s.prodRows.reduce((a,r) => a+r.cos, 0);
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido Fábrica · ${s.fecha}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet"><!-- Google Identity Services — OAuth 2.0 para Sheets API -->
   <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Nunito',sans-serif;padding:15mm;color:#3A2A0A;max-width:210mm;margin:0 auto}
   .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8mm;padding-bottom:4mm;border-bottom:3px solid #F0C97E}
   .logo{background:#F0C97E;border-radius:10px;padding:6px 14px;font-weight:900;font-size:15px;color:#fff;line-height:1.1;text-align:center}

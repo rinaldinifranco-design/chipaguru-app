@@ -526,7 +526,7 @@ function bootApp() {
   document.getElementById('h-title').textContent = SESSION.name;
   document.getElementById('h-subtitle').textContent = SESSION.zona + ' · ' + fmtDate();
   // Mostrar/ocultar dashboard según rol
-  document.getElementById('tab-dashboard-wrap').style.display = SESSION.role === 'admin' ? '' : 'none';
+  document.getElementById('tab-dashboard-wrap').style.display = '';
   sincronizarPrecios();
   cargarFrecuentes();
   recalc();
@@ -909,26 +909,101 @@ function recalc() {
 }
 
 // ══ DASHBOARD (admin) ══
-async function cargarDashboard() {
-  const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
-  const mesActual = new Date().toLocaleDateString('es-AR', { month: '2-digit', year: 'numeric' });
-  const delMes = local.filter(s => s.fecha && s.fecha.includes(mesActual.split('/')[1]));
-  const totalKg = delMes.reduce((a, s) => a + (parseFloat(s.totKg) || 0), 0);
-  const totalNeta = delMes.reduce((a, s) => a + (parseFloat(s.neta) || 0), 0);
-  document.getElementById('d-reps').textContent = '—';
-  document.getElementById('d-salidas').textContent = delMes.length;
-  document.getElementById('d-kg').textContent = totalKg.toFixed(1) + ' kg';
-  document.getElementById('d-ganancia').textContent = fmt(totalNeta);
-  const rep_map = {};
-  local.forEach(s => {
-    if (!rep_map[s.rep]) rep_map[s.rep] = { neta: 0, salidas: 0 };
-    rep_map[s.rep].neta += parseFloat(s.neta) || 0;
-    rep_map[s.rep].salidas++;
+async async function cargarDashboard() {
+  const sess = JSON.parse(localStorage.getItem('cg_session') || '{}');
+
+  // Mostrar/ocultar sección admin según rol
+  const adminSection = document.getElementById('dash-admin-section');
+  if (adminSection) adminSection.style.display = sess.role === 'admin' ? '' : 'none';
+
+  // Métricas vacías mientras carga
+  ['d-reps','d-salidas','d-kg','d-ganancia'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = '...';
   });
-  const ranking = Object.entries(rep_map).sort((a, b) => b[1].neta - a[1].neta);
-  document.getElementById('ranking-list').innerHTML = ranking.length ? ranking.map(([name, data], i) =>
-    `<div class="ranking-row"><span class="ranking-pos">${i + 1}</span><div class="ranking-name">${name}<br><span style="font-size:10px;font-weight:400;color:var(--text3)">${data.salidas} salidas</span></div><span class="ranking-val">${fmt(data.neta)}</span></div>`
-  ).join('') : '<div style="text-align:center;padding:2rem;color:var(--text3)">Cerrá jornadas para ver el ranking</div>';
+
+  try {
+    const token = await getGoogleToken();
+
+    // ── Para admin: leer Historial y mostrar datos por representante ──
+    if (sess.role === 'admin') {
+      const sheetId = CONFIG.SHEET_HISTORIAL;
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Historial!A:O?access_token=${token}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      const rows = (data.values || []).slice(1).filter(r => r[3]);
+
+      // Agrupar por nombre de representante (col 3)
+      const repStats = {};
+      rows.forEach(row => {
+        const rep  = row[3] || '?';
+        const zona = row[4] || '';
+        const kg   = parseFloat(row[7]) || 0;
+        const venta = parseFloat(String(row[11] || '0').replace(/[^0-9.-]/g,'')) || 0;
+        const neta  = parseFloat(String(row[13] || '0').replace(/[^0-9.-]/g,'')) || 0;
+        if (!repStats[rep]) repStats[rep] = { zona, salidas: 0, kg: 0, venta: 0, neta: 0 };
+        repStats[rep].salidas++;
+        repStats[rep].kg    += kg;
+        repStats[rep].venta += venta;
+        repStats[rep].neta  += neta;
+      });
+
+      const repsArr   = Object.entries(repStats).sort((a,b) => b[1].kg - a[1].kg);
+      const totalKg   = repsArr.reduce((s,[,r]) => s + r.kg, 0);
+      const totalNeta = repsArr.reduce((s,[,r]) => s + r.neta, 0);
+
+      const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+      setEl('d-reps',    repsArr.length  || '—');
+      setEl('d-salidas', rows.length     || '—');
+      setEl('d-kg',      totalKg > 0 ? totalKg.toFixed(1) + ' kg' : '—');
+      setEl('d-ganancia', totalNeta > 0 ? '$' + Math.round(totalNeta).toLocaleString('es-AR') : '—');
+
+      const rankEl = document.getElementById('ranking-list');
+      if (rankEl) {
+        rankEl.innerHTML = repsArr.length === 0
+          ? '<div style="text-align:center;color:#999;padding:20px;font-size:13px">Sin datos aún. Los registros aparecen después de cerrar una jornada.</div>'
+          : repsArr.map(([rep, s], i) => `
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0e0c0">
+                <div>
+                  <span style="font-weight:600;color:#5B3A29">${i+1}. ${rep}</span>
+                  <span style="color:#aaa;font-size:12px;margin-left:8px">${s.zona}</span>
+                </div>
+                <div style="text-align:right;font-size:13px;color:#555">
+                  <b>${s.salidas}</b> salidas &nbsp;·&nbsp;
+                  <b>${s.kg.toFixed(1)}</b> kg &nbsp;·&nbsp;
+                  <b>$${Math.round(s.venta).toLocaleString('es-AR')}</b>
+                </div>
+              </div>
+            `).join('');
+      }
+    }
+
+    // ── Para rep: mostrar solo sus propias métricas del historial ──
+    if (sess.role === 'rep') {
+      const sheetId = CONFIG.SHEET_HISTORIAL;
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Historial!A:O?access_token=${token}`;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      const rows = (data.values || []).slice(1).filter(r => r[3] === sess.name);
+
+      const totalKg = rows.reduce((s,r) => s + (parseFloat(r[7])||0), 0);
+      const totalV  = rows.reduce((s,r) => s + (parseFloat(String(r[11]||'0').replace(/[^0-9.-]/g,''))||0), 0);
+
+      const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+      setEl('d-salidas', rows.length   || '—');
+      setEl('d-kg',      totalKg > 0 ? totalKg.toFixed(1) + ' kg' : '—');
+      setEl('d-ganancia', totalV > 0  ? '$' + Math.round(totalV).toLocaleString('es-AR') : '—');
+    }
+
+    const syncEl = document.getElementById('dash-sync');
+    if (syncEl) syncEl.innerText = new Date().toLocaleTimeString('es-AR');
+
+  } catch(e) {
+    console.error('Dashboard error:', e);
+    const rankEl = document.getElementById('ranking-list');
+    if (rankEl) rankEl.innerHTML = '<div style="color:#c00;padding:10px;font-size:13px">Error cargando datos: ' + e.message + '</div>';
+  }
 }
 
 // ══ GENERAR REMITOS ══

@@ -1,0 +1,26 @@
+{
+  "name": "Chipá Gurú — Planificador",
+  "short_name": "ChipáGurú",
+  "description": "Planificador de reparto para representantes de Chipá Gurú",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F0C97E",
+  "theme_color": "#F0C97E",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "es-AR"
+}

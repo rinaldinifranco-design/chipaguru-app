@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#F0C97E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ChipáGurú">
+<title>Chipá Gurú — Planificador</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#F0C97E;--brand-dark:#C9A055;--brand-darker:#A07830;
+  --bg:#F7F0E4;--bg2:#EDE3D0;--bg3:#E4D8C0;--card:#FFFFFF;--border:#DDD0B0;
+  --text:#3A2A0A;--text2:#6A5030;--text3:#9A7848;
+  --green:#2D8A5E;--red:#C0392B;--orange:#C07020;--white:#FFFFFF;
+}
+body.dark{
+  --bg:#1A1510;--bg2:#221C14;--bg3:#2A231A;--card:#2A231A;--border:#3A3020;
+  --text:#F5EDD8;--text2:#C8A870;--text3:#8A7050;
+  --green:#3DBF82;--red:#E05545;--orange:#E08830;
+}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;font-size:14px;min-height:100vh;transition:background .3s,color .3s}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* ── LOGIN ── */
+#screen-login{align-items:center;justify-content:center;background:var(--brand);padding:2rem}
+.login-box{background:var(--white);border-radius:20px;padding:2rem;width:100%;max-width:360px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.login-logo{background:var(--brand);border-radius:14px;padding:10px 20px;display:inline-block;margin-bottom:1.2rem}
+.login-logo span{font-family:'Nunito',sans-serif;font-weight:900;font-size:20px;color:var(--white);line-height:1.1;display:block}
+.login-box h1{font-weight:900;font-size:1.4rem;color:var(--text);margin-bottom:.3rem}
+.login-box p{font-size:12px;color:var(--text3);margin-bottom:1.5rem}
+.login-field{display:flex;flex-direction:column;gap:4px;margin-bottom:1rem;text-align:left}
+.login-field label{font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+.login-field input{background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:14px;font-family:'Nunito',sans-serif;color:var(--text);width:100%}
+.login-field input:focus{outline:none;border-color:var(--brand)}
+.btn-login{width:100%;background:var(--brand);color:var(--white);border:none;border-radius:10px;padding:12px;font-family:'Nunito',sans-serif;font-weight:900;font-size:15px;cursor:pointer;transition:background .2s}
+.btn-login:hover{background:var(--brand-dark)}
+.login-error{color:var(--red);font-size:12px;margin-top:.5rem;display:none}
+.btn-google{width:100%;background:var(--white);color:#3A2A0A;border:1.5px solid var(--border);border-radius:10px;padding:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;margin-bottom:.75rem;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s}
+.btn-google:hover{background:var(--bg2)}
+.divider{display:flex;align-items:center;gap:8px;margin:.75rem 0;color:var(--text3);font-size:11px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── HEADER ── */
+.app-header{background:var(--brand);padding:.9rem 1.2rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-shrink:0}
+.header-left{display:flex;align-items:center;gap:.75rem}
+.h-logo{background:var(--white);border-radius:10px;padding:4px 10px}
+.h-logo span{font-family:'Nunito',sans-serif;font-weight:900;font-size:11px;color:var(--brand);line-height:1.1;text-align:center;display:block}
+.h-title{font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;color:var(--white);line-height:1}
+.h-subtitle{font-size:10px;color:rgba(255,255,255,.75);margin-top:1px}
+.hdr-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.hdr-btn{background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.5);border-radius:20px;padding:4px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;color:var(--white);cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:background .2s}
+.hdr-btn:hover{background:rgba(255,255,255,.4)}
+.hbar{height:4px;background:rgba(0,0,0,.12);flex-shrink:0}
+
+/* ── NAV TABS ── */
+.nav-tabs{display:flex;background:var(--card);border-bottom:1.5px solid var(--border);flex-shrink:0}
+.nav-tab{flex:1;padding:.7rem .5rem;font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;color:var(--text3);text-align:center;cursor:pointer;border-bottom:3px solid transparent;transition:color .15s,border .15s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.nav-tab i{font-size:18px}
+.nav-tab.active{color:var(--brand-darker);border-bottom-color:var(--brand)}
+body.dark .nav-tab.active{color:var(--brand)}
+
+/* ── CONTENT ── */
+.content{flex:1;overflow-y:auto;padding:1rem 1.1rem}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── COMMON ── */
+.sec{font-family:'Nunito',sans-serif;font-weight:900;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--brand-darker);margin:1.2rem 0 .6rem;display:flex;align-items:center;gap:8px}
+body.dark .sec{color:var(--brand)}
+.sec::after{content:'';flex:1;height:1.5px;background:var(--border)}
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:1rem 1.1rem;margin-bottom:.8rem}
+.field-row{display:flex;flex-direction:column;gap:3px;margin-bottom:.7rem}
+.field-row label{font-size:11px;color:var(--text2);font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.field-row input,.field-row select{background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);padding:7px 10px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;width:100%}
+.field-row input:focus,.field-row select:focus{outline:none;border-color:var(--brand)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+@media(max-width:480px){.grid2{grid-template-columns:1fr}}
+.mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:1rem}
+.m{background:var(--bg2);border-radius:10px;padding:.7rem .9rem;border:1.5px solid var(--border)}
+.ml{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:800}
+.mv{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.2rem;line-height:1}
+.mv.y{color:var(--brand-darker)}.mv.g{color:var(--green)}.mv.r{color:var(--red)}.mv.w{color:var(--text)}
+body.dark .mv.y{color:var(--brand)}
+.ms{font-size:10px;color:var(--text3);margin-top:3px;line-height:1.4}
+
+/* ── BONUS BANNER ── */
+.bonus-banner{background:var(--brand);border-radius:14px;padding:1rem 1.1rem;margin-bottom:.8rem}
+body.dark .bonus-banner{background:#3A2C10;border:1.5px solid var(--brand-dark)}
+.bb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:.65rem}
+.bb-label{font-size:10px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-bottom:3px}
+body.dark .bb-label{color:var(--text3)}
+.bb-val{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.1rem;color:var(--white)}
+body.dark .bb-val{color:var(--brand)}
+.bb-sub{font-size:10px;color:rgba(255,255,255,.6);margin-top:2px}
+body.dark .bb-sub{color:var(--text3)}
+.bb-formula{font-size:12px;color:rgba(255,255,255,.85);line-height:1.8;border-top:1px solid rgba(255,255,255,.2);padding-top:.6rem}
+body.dark .bb-formula{color:var(--text2);border-top-color:var(--border)}
+.bb-formula strong{color:var(--white)}
+body.dark .bb-formula strong{color:var(--brand)}
+.bb-nota{font-size:11px;color:rgba(255,255,255,.5);margin-top:.3rem;font-style:italic}
+body.dark .bb-nota{color:var(--text3)}
+
+/* ── CLIENTS ── */
+.client-card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;margin-bottom:.75rem;overflow:hidden}
+.client-hdr{display:flex;align-items:center;gap:8px;padding:.65rem .9rem;background:var(--brand)}
+body.dark .client-hdr{background:#3A2C10;border-bottom:1.5px solid var(--border)}
+.client-num{font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;color:var(--white);min-width:20px}
+body.dark .client-num{color:var(--brand)}
+.client-name-in{background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.4);border-radius:8px;color:var(--white);padding:5px 10px;font-size:13px;font-family:'Nunito',sans-serif;font-weight:700;flex:1;min-width:0}
+body.dark .client-name-in{background:var(--bg3);border-color:var(--border);color:var(--text)}
+.client-name-in::placeholder{color:rgba(255,255,255,.6)}
+body.dark .client-name-in::placeholder{color:var(--text3)}
+.del-cli-btn{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:var(--white);border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;white-space:nowrap}
+.del-cli-btn:hover{background:rgba(180,50,30,.5)}
+body.dark .del-cli-btn{background:var(--bg3);border-color:var(--border);color:var(--red)}
+.client-extra{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:.5rem .9rem .3rem;background:var(--bg2)}
+@media(max-width:380px){.client-extra{grid-template-columns:1fr}}
+.client-extra input,.client-extra select{background:var(--card);border:1.5px solid var(--border);border-radius:7px;color:var(--text);padding:4px 8px;font-size:12px;font-family:'Nunito',sans-serif;width:100%}
+.ce-label{font-size:10px;color:var(--text3);font-weight:800;text-transform:uppercase;margin-bottom:2px}
+.client-body{padding:.5rem .9rem .4rem;background:var(--card)}
+.item-row{display:grid;grid-template-columns:1fr 64px 30px;gap:6px;align-items:center;margin-bottom:5px}
+.item-row select{background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);padding:5px 7px;font-size:12px;width:100%;font-family:'Nunito',sans-serif;font-weight:700}
+.item-row input[type=number]{background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);padding:5px 6px;font-size:13px;width:100%;font-family:'Nunito',sans-serif;font-weight:700;text-align:center}
+.del-item-btn{background:var(--bg2);border:1.5px solid var(--border);color:var(--red);border-radius:8px;padding:5px 7px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.del-item-btn:hover{background:var(--red);color:var(--white)}
+.client-footer{display:flex;align-items:center;justify-content:space-between;padding:.4rem .9rem .7rem;gap:6px;flex-wrap:wrap;background:var(--card)}
+.cfl{display:flex;gap:6px;flex-wrap:wrap}
+.add-item-btn{background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;color:var(--text2);padding:4px 9px;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;display:flex;align-items:center;gap:3px}
+.add-item-btn:hover{border-color:var(--brand-darker);color:var(--brand-darker)}
+.toggle-detail{background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;color:var(--text3);padding:4px 9px;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;display:flex;align-items:center;gap:3px}
+.client-total{font-family:'Nunito',sans-serif;font-weight:900;font-size:.95rem}
+.desglose{background:var(--bg2);border-top:1.5px solid var(--border);padding:.65rem .9rem;display:none}
+.desglose.open{display:block}
+.desglose-ttl{font-size:10px;color:var(--brand-darker);text-transform:uppercase;letter-spacing:.1em;font-weight:800;margin-bottom:.4rem}
+body.dark .desglose-ttl{color:var(--brand)}
+.drow{display:grid;grid-template-columns:1fr auto auto auto;gap:5px;font-size:11px;padding:4px 0;border-bottom:1px solid var(--border);align-items:start}
+.drow:last-child{border-bottom:none}
+.dprod{color:var(--text);line-height:1.4}
+.dtag{font-size:10px;color:var(--text3);display:block}
+.dnum{color:var(--text2);text-align:right;font-family:'Nunito',sans-serif;font-weight:800;white-space:nowrap}
+.dpos{color:var(--green);text-align:right;font-family:'Nunito',sans-serif;font-weight:900;white-space:nowrap}
+.dneg{color:var(--red);text-align:right;font-family:'Nunito',sans-serif;font-weight:900;white-space:nowrap}
+.dtotal-row{display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;padding-top:.4rem;border-top:1.5px solid var(--border);font-size:11px;color:var(--text2);flex-wrap:wrap;gap:4px}
+
+/* ── BUTTONS ── */
+.btn-add-cli{background:var(--brand);color:var(--white);border:none;border-radius:12px;padding:10px 18px;font-family:'Nunito',sans-serif;font-weight:900;font-size:13px;cursor:pointer;margin-bottom:1rem;display:flex;align-items:center;gap:6px;transition:background .2s}
+.btn-add-cli:hover{background:var(--brand-dark)}
+.btn-add-cli:disabled{background:var(--border);color:var(--text3);cursor:not-allowed}
+.result-bar{border-radius:12px;padding:1rem 1.1rem;border-left:4px solid var(--brand);margin-bottom:1rem}
+.result-bar.pos{background:#E8F5EE;border-color:var(--green)}
+.result-bar.adj{background:#FFF3E0;border-color:var(--orange)}
+.result-bar.neg{background:#FDECEA;border-color:var(--red)}
+body.dark .result-bar.pos{background:#0F2A1A}
+body.dark .result-bar.adj{background:#2A1A08}
+body.dark .result-bar.neg{background:#2A0F0F}
+.result-bar .rt{font-family:'Nunito',sans-serif;font-weight:900;font-size:.9rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.result-bar.pos .rt{color:var(--green)}.result-bar.adj .rt{color:var(--orange)}.result-bar.neg .rt{color:var(--red)}
+.result-bar .rd{font-size:12px;color:var(--text2);line-height:1.7}
+.result-bar .rd strong{color:var(--text)}
+
+/* ── EXPORT BAR ── */
+.export-bar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+@media(max-width:380px){.export-bar{grid-template-columns:1fr}}
+.exp-btn{background:var(--card);border:2px solid var(--brand);border-radius:12px;padding:10px 12px;font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;color:var(--brand-darker);cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .2s}
+body.dark .exp-btn{color:var(--brand)}
+.exp-btn:hover{background:var(--brand);color:var(--white)}
+.exp-btn i{font-size:22px;flex-shrink:0}
+.exp-btn small{font-size:10px;font-weight:700;color:var(--text3);display:block;margin-top:1px}
+.exp-btn:hover small{color:rgba(255,255,255,.75)}
+
+/* ── TABLE ── */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:380px}
+thead tr{background:var(--brand)}
+thead th{font-family:'Nunito',sans-serif;font-weight:900;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--white);padding:8px 9px;text-align:left;white-space:nowrap}
+tbody tr{border-bottom:1.5px solid var(--border)}
+tbody tr:hover{background:var(--bg2)}
+tbody td{padding:6px 9px;color:var(--text2);white-space:nowrap}
+tbody tr.best td{color:var(--brand-darker);font-weight:800}
+body.dark tbody tr.best td{color:var(--brand)}
+.badge{display:inline-block;font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;text-transform:uppercase}
+.b-g{background:#E8F5EE;color:var(--green)}.b-a{background:#FFF3E0;color:var(--orange)}.b-r{background:#FDECEA;color:var(--red)}
+body.dark .b-g{background:#0F2A1A}.body.dark .b-a{background:#2A1A08}.body.dark .b-r{background:#2A0F0F}
+
+/* ── DASHBOARD ── */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1rem}
+.dash-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:.9rem 1rem}
+.dash-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-bottom:4px}
+.dash-val{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.4rem;color:var(--text)}
+.dash-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.ranking-row{display:flex;align-items:center;justify-content:space-between;padding:.6rem .8rem;border-radius:10px;margin-bottom:6px;background:var(--bg2);border:1.5px solid var(--border);font-size:13px}
+.ranking-pos{font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;color:var(--brand-darker);min-width:24px}
+body.dark .ranking-pos{color:var(--brand)}
+.ranking-name{font-weight:800;color:var(--text);flex:1;padding:0 8px}
+.ranking-val{font-family:'Nunito',sans-serif;font-weight:900;color:var(--green);font-size:.95rem}
+
+/* ── UPLOAD ── */
+.upload-area{border:2px dashed var(--brand);border-radius:14px;padding:2rem 1rem;text-align:center;cursor:pointer;transition:background .2s;margin-bottom:1rem}
+.upload-area:hover{background:var(--bg2)}
+.upload-area i{font-size:36px;color:var(--brand-darker);margin-bottom:.5rem;display:block}
+body.dark .upload-area i{color:var(--brand)}
+.upload-area p{font-size:13px;color:var(--text2);font-weight:700}
+.upload-area small{font-size:11px;color:var(--text3)}
+.upload-template{background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;font-size:12px;color:var(--text2);line-height:1.7}
+.upload-template strong{color:var(--text)}
+
+/* ── SYNC BADGE ── */
+.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;margin-left:8px}
+.sync-badge.ok{background:#E8F5EE;color:var(--green)}
+.sync-badge.loading{background:#FFF3E0;color:var(--orange)}
+.sync-badge.error{background:#FDECEA;color:var(--red)}
+body.dark .sync-badge.ok{background:#0F2A1A}
+body.dark .sync-badge.loading{background:#2A1A08}
+body.dark .sync-badge.error{background:#2A0F0F}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#3A2A0A;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:800;z-index:999;transition:transform .3s;white-space:nowrap;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── CLIENTES FRECUENTES ── */
+.freq-suggestions{background:var(--card);border:1.5px solid var(--brand);border-radius:10px;padding:.5rem;margin-bottom:.5rem;display:none}
+.freq-suggestions.open{display:block}
+.freq-item{padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center}
+.freq-item:hover{background:var(--bg2)}
+.freq-item small{color:var(--text3);font-weight:400}
+
+footer{text-align:center;padding:1rem;color:var(--text3);font-size:11px;border-top:1.5px solid var(--border)}
+footer span{color:var(--brand-darker);font-weight:800}
+body.dark footer span{color:var(--brand)}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-logo"><span>CHIPÁ<br>GURÚ</span></div>
+    <h1>Bienvenido</h1>
+    <p>Ingresá con tu cuenta de representante</p>
+    <div class="login-field"><label>Usuario / Zona</label><input id="login-user" placeholder="tu nombre o zona" autocomplete="username"></div>
+    <div class="login-field"><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••" autocomplete="current-password"></div>
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
+    <div class="divider">o</div>
+    <button class="btn-google" onclick="loginGoogle()">
+      <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.93l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continuar con Google
+    </button>
+    <p style="font-size:10px;color:var(--text3);margin-top:.5rem">¿Sos admin de la fábrica? Usá el usuario <strong>admin</strong></p>
+  </div>
+</div>
+
+<!-- ══ APP PRINCIPAL ══════════════════════════════════════════════════════ -->
+<div id="screen-app" class="screen">
+  <div class="app-header">
+    <div class="header-left">
+      <div class="h-logo"><span>CHIPÁ<br>GURÚ</span></div>
+      <div>
+        <div class="h-title" id="h-title">Planificador</div>
+        <div class="h-subtitle" id="h-subtitle">Cargando...</div>
+      </div>
+    </div>
+    <div class="hdr-btns">
+      <span class="sync-badge loading" id="sync-badge"><i class="ti ti-refresh" style="font-size:12px"></i> Sync</span>
+      <button class="hdr-btn" id="mode-btn" onclick="toggleMode()"><i class="ti ti-moon"></i></button>
+      <button class="hdr-btn" onclick="doLogout()"><i class="ti ti-logout"></i></button>
+    </div>
+  </div>
+  <div class="hbar"></div>
+
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showTab('ruta')" id="tab-ruta"><i class="ti ti-map-pin"></i>Ruta</div>
+    <div class="nav-tab" onclick="showTab('clientes')" id="tab-clientes"><i class="ti ti-users"></i>Clientes</div>
+    <div class="nav-tab" onclick="showTab('exportar')" id="tab-exportar"><i class="ti ti-file-export"></i>Exportar</div>
+    <div class="nav-tab" id="tab-dashboard-wrap" onclick="showTab('dashboard')"><i class="ti ti-chart-bar"></i>Dashboard</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── TAB: RUTA ── -->
+    <div class="tab-panel active" id="panel-ruta">
+
+      <div class="sec">Configuración del día</div>
+      <div class="card grid2">
+        <div class="field-row"><label>Km totales de ruta</label><div style="display:flex;align-items:center;gap:6px"><input type="number" id="km-total" value="90" min="0" oninput="recalc()" style="width:80px"><span style="font-size:11px;color:var(--text3)">km</span></div></div>
+        <div class="field-row"><label>Precio tanque $</label><input type="number" id="p-tanque" value="78000" min="1" oninput="recalc()"></div>
+        <div class="field-row"><label>Km por tanque</label><input type="number" id="km-tanque" value="500" min="1" oninput="recalc()"></div>
+        <div class="field-row"><label>Precio kg fábrica $</label><input type="number" id="precio-fab" value="8100" min="1" oninput="recalc()"></div>
+      </div>
+
+      <div class="sec">Bonus chipá clásico</div>
+      <div class="bonus-banner">
+        <div class="bb-grid">
+          <div><div class="bb-label">Kg clásico vendidos</div><div class="bb-val" id="bb-kg">0 kg</div><div class="bb-sub">público + mayorista</div></div>
+          <div><div class="bb-label">Bonus descuento</div><div class="bb-val" id="bb-monto">$0</div><div class="bb-sub" id="bb-sub2">—</div></div>
+          <div><div class="bb-label">Precio kg bonus</div><div class="bb-val" id="bb-pbonus">$8.100</div><div class="bb-sub" id="bb-tramo">—</div></div>
+          <div><div class="bb-label">Ingreso extra</div><div class="bb-val" id="bb-extra" style="color:#fff">$0</div><div class="bb-sub">suma a neta</div></div>
+        </div>
+        <div class="bb-formula" id="bb-formula">Cargá clientes con chipá clásico para ver el bonus.</div>
+        <div class="bb-nota">Solo clásico público y mayorista. +100 kg → precio mayorista.</div>
+      </div>
+
+      <div class="sec">Clientes del día</div>
+      <div id="clients-list"></div>
+      <button class="btn-add-cli" id="add-btn" onclick="addClient()"><i class="ti ti-plus"></i> Agregar cliente</button>
+
+      <div class="sec">Resumen de la jornada</div>
+      <div class="mg" id="metrics"></div>
+      <div id="result-bar" class="result-bar pos"><div class="rt" id="rt">Agregá clientes para ver el análisis</div><div class="rd" id="rd">Completá los clientes del día.</div></div>
+
+      <div class="sec">Detalle por producto</div>
+      <div class="card"><div class="tw"><table>
+        <thead><tr><th>Producto</th><th>Unid.</th><th>P.venta</th><th>Costo</th><th>Ingreso</th><th>Ganancia</th><th>Margen</th></tr></thead>
+        <tbody id="prod-tbody"><tr><td colspan="7" style="color:var(--text3);text-align:center;padding:1rem">Sin datos todavía</td></tr></tbody>
+      </table></div></div>
+    </div>
+
+    <!-- ── TAB: CLIENTES FRECUENTES ── -->
+    <div class="tab-panel" id="panel-clientes">
+      <div class="sec">Carga masiva desde Excel</div>
+      <div class="upload-template card">
+        <strong>Formato del Excel para carga masiva:</strong><br>
+        Columnas: <strong>Cliente · Dirección · Producto_ID · Cantidad · Forma_Pago · Observaciones</strong><br>
+        Ejemplo: <code>Kiosco Sol · Av. Mitre 100 · c1 · 2 · Efectivo · </code><br>
+        <a href="#" onclick="descargarPlantilla()" style="color:var(--brand-darker);font-weight:800;font-size:12px">⬇ Descargar plantilla Excel</a>
+      </div>
+      <div class="upload-area" onclick="document.getElementById('file-input').click()">
+        <i class="ti ti-table-import"></i>
+        <p>Tocá para subir tu planilla del día</p>
+        <small>.xlsx o .csv · Máx. 20 clientes</small>
+      </div>
+      <input type="file" id="file-input" accept=".xlsx,.csv" style="display:none" onchange="procesarArchivo(this)">
+
+      <div class="sec">Clientes frecuentes guardados</div>
+      <div id="freq-list">
+        <div style="text-align:center;padding:2rem;color:var(--text3);font-size:13px">
+          <i class="ti ti-users" style="font-size:32px;display:block;margin-bottom:.5rem;opacity:.4"></i>
+          Los clientes se guardan automáticamente al cerrar una jornada.<br>La próxima vez aparecen como sugerencias.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: EXPORTAR ── -->
+    <div class="tab-panel" id="panel-exportar">
+      <div class="sec">Documentos del día</div>
+      <div class="export-bar">
+        <button class="exp-btn" onclick="generarRemitos()">
+          <i class="ti ti-file-invoice"></i>
+          <div><span>Remitos</span><small>2 por hoja A4</small></div>
+        </button>
+        <button class="exp-btn" onclick="generarPedidoFabrica()">
+          <i class="ti ti-building-factory-2"></i>
+          <div><span>Pedido fábrica</span><small>PDF con bonus</small></div>
+        </button>
+        <button class="exp-btn" onclick="generarResumenDia()">
+          <i class="ti ti-chart-bar"></i>
+          <div><span>Resumen día</span><small>Rentabilidad</small></div>
+        </button>
+        <button class="exp-btn" onclick="cerrarJornada()">
+          <i class="ti ti-cloud-upload"></i>
+          <div><span>Cerrar jornada</span><small>Guardar en Sheets</small></div>
+        </button>
+      </div>
+
+      <div class="sec">Historial de salidas</div>
+      <div id="historial-list">
+        <div style="text-align:center;padding:2rem;color:var(--text3);font-size:13px">
+          <i class="ti ti-history" style="font-size:32px;display:block;margin-bottom:.5rem;opacity:.4"></i>
+          Las jornadas cerradas aparecen acá.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: DASHBOARD (solo admin) ── -->
+    <div class="tab-panel" id="panel-dashboard">
+      <div class="sec">Rendimiento general <span class="sync-badge ok" id="dash-sync">En vivo</span></div>
+      <div class="dash-grid" id="dash-metrics">
+        <div class="dash-card"><div class="dash-label">Representantes activos</div><div class="dash-val" id="d-reps">—</div></div>
+        <div class="dash-card"><div class="dash-label">Salidas este mes</div><div class="dash-val" id="d-salidas">—</div></div>
+        <div class="dash-card"><div class="dash-label">Kg vendidos mes</div><div class="dash-val" id="d-kg">—</div></div>
+        <div class="dash-card"><div class="dash-label">Ganancia neta mes</div><div class="dash-val" id="d-ganancia" style="color:var(--green)">—</div></div>
+      </div>
+      <div class="sec">Ranking por representante</div>
+      <div id="ranking-list"><div style="text-align:center;padding:2rem;color:var(--text3);font-size:13px">Cargando datos...</div></div>
+    </div>
+
+  </div>
+  <footer>Chipá Gurú · <span>PWA v1.0</span> · Precios Marzo 2026</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══ CONFIGURACIÓN — completar con tus IDs de Google Sheets ══
+const CONFIG = {
+  // IDs de las planillas creadas en tu Drive:
+  SHEET_PRECIOS:      '152GfanJdatUrjdgSi6NuPiofCgnCI2Zc59vdiSKpuHs',
+  SHEET_CLIENTES:     '1NCQOEdyUgG5sOPWHUe-zXxUegefF_1fFb8aVqxY4MtY',
+  SHEET_HISTORIAL:    '1CSCbiDfPUV7vXpeHyomBraGkCTEGSk2tFDaKtd1Trjk',
+  SHEET_REPRESENTANTES: '1Dh8qZxakXSaJwgbXYJjBZ-s2NgqT0YpF1tivvN47WPU',
+  // Reemplazá con tu Client ID de Google OAuth
+  // (ver instrucciones en README al final del archivo)
+  GOOGLE_CLIENT_ID: 'TU_CLIENT_ID.apps.googleusercontent.com',
+};
+
+// ══ PRODUCTOS — se reemplaza con datos de Sheets cuando hay conexión ══
+let PRODS = [
+  {id:'c1',  cat:'Clásico público',   label:'Clásico 1 kg',             kg:1,    pventa:13990, costo:8100,  bonus:true},
+  {id:'c2',  cat:'Clásico público',   label:'Clásico 2 kg',             kg:2,    pventa:23990, costo:16200, bonus:true},
+  {id:'c5',  cat:'Clásico público',   label:'Clásico 5 kg',             kg:5,    pventa:52990, costo:40500, bonus:true},
+  {id:'c10', cat:'Clásico público',   label:'Clásico 10 kg',            kg:10,   pventa:88990, costo:81000, bonus:true},
+  {id:'cm1', cat:'Clásico mayorista', label:'Mayorista 10–19 kg (x kg)',kg:1,    pventa:8890,  costo:8100,  bonus:true},
+  {id:'cm2', cat:'Clásico mayorista', label:'Mayorista 20–60 kg (x kg)',kg:1,    pventa:8500,  costo:8100,  bonus:true},
+  {id:'cm3', cat:'Clásico mayorista', label:'Mayorista 60–100 kg (x kg)',kg:1,   pventa:8300,  costo:8100,  bonus:true},
+  {id:'cm4', cat:'Clásico mayorista', label:'Mayorista +100 kg (x kg)', kg:1,   pventa:8150,  costo:8100,  bonus:true},
+  {id:'r05', cat:'Relleno público',   label:'Relleno ½ kg',             kg:0.5,  pventa:8600,  costo:5600,  bonus:false},
+  {id:'r1',  cat:'Relleno público',   label:'Relleno 2×½ kg',           kg:1,    pventa:15990, costo:11200, bonus:false},
+  {id:'rm5', cat:'Relleno mayorista', label:'Rellenos mix 5 kg',        kg:5,    pventa:72500, costo:54000, bonus:false},
+  {id:'rm10',cat:'Relleno mayorista', label:'Rellenos mix 10 kg',       kg:10,   pventa:133000,costo:107000,bonus:false},
+  {id:'p1',  cat:'Pan de chipa',      label:'Pan chipa 1 pack (4u)',    kg:0.2,  pventa:12100, costo:7400,  bonus:false},
+  {id:'p2',  cat:'Pan de chipa',      label:'Pan chipa 2 packs',        kg:0.4,  pventa:21800, costo:14800, bonus:false},
+  {id:'p5',  cat:'Pan de chipa',      label:'Pan chipa 5 packs',        kg:1,    pventa:52000, costo:37000, bonus:false},
+  {id:'pm1', cat:'Pan mayorista',     label:'Pan mayorista 10 packs',   kg:2,    pventa:9180,  costo:7100,  bonus:false},
+  {id:'pm2', cat:'Pan mayorista',     label:'Pan mayorista +20 packs',  kg:2,    pventa:8850,  costo:6950,  bonus:false},
+  {id:'pr1', cat:'Promos',            label:'Promo 2 kg surtido rellenos',kg:2,  pventa:27500, costo:20300, bonus:false},
+  {id:'pr2', cat:'Promos',            label:'Promo 2 kg rellenos + 1 kg clásico',kg:3,pventa:38600,costo:27400,bonus:false},
+];
+
+// ══ ESTADO ══
+let SESSION = JSON.parse(localStorage.getItem('cg_session') || 'null');
+let darkMode = localStorage.getItem('cg_dark') === '1';
+let clientSeq = 0, itemSeq = 0, remitoSeq = 0;
+const clients = [];
+let lastState = {};
+let FREQ_CLIENTS = JSON.parse(localStorage.getItem('cg_freq') || '[]');
+
+// ══ INIT ══
+if (darkMode) document.body.classList.add('dark');
+if (SESSION) bootApp();
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+// ══ LOGIN ══
+function doLogin() {
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  // Demo: admin/admin o cualquier usuario con pass "1234"
+  // En producción esto se valida contra la hoja 04 — Representantes via Google Sheets API
+  const isAdmin = user === 'admin' && pass === 'admin';
+  const isRep = pass === '1234' && user.length > 0;
+  if (isAdmin || isRep) {
+    SESSION = { user, name: isAdmin ? 'Administrador' : user, role: isAdmin ? 'admin' : 'rep', zona: isAdmin ? 'Todas' : 'Zona Sur' };
+    localStorage.setItem('cg_session', JSON.stringify(SESSION));
+    bootApp();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function loginGoogle() {
+  toast('Google OAuth: configurar CLIENT_ID en CONFIG');
+}
+
+function doLogout() {
+  localStorage.removeItem('cg_session');
+  SESSION = null;
+  document.getElementById('screen-app').classList.remove('active');
+  document.getElementById('screen-login').classList.add('active');
+}
+
+function bootApp() {
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-app').classList.add('active');
+  document.getElementById('h-title').textContent = SESSION.name;
+  document.getElementById('h-subtitle').textContent = SESSION.zona + ' · ' + fmtDate();
+  // Mostrar/ocultar dashboard según rol
+  document.getElementById('tab-dashboard-wrap').style.display = SESSION.role === 'admin' ? '' : 'none';
+  sincronizarPrecios();
+  cargarFrecuentes();
+  recalc();
+}
+
+// ══ SINCRONIZAR PRECIOS DESDE SHEETS ══
+async function sincronizarPrecios() {
+  const badge = document.getElementById('sync-badge');
+  badge.className = 'sync-badge loading';
+  badge.innerHTML = '<i class="ti ti-refresh" style="font-size:11px"></i> Sync';
+  try {
+    const token = await getGoogleToken();
+    if (!token) throw new Error('Sin token');
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_PRECIOS}/values/A2:I50`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error('Sheets error');
+    const data = await res.json();
+    if (data.values && data.values.length) {
+      PRODS = data.values.map(r => ({
+        id: r[0], cat: r[2], label: r[1],
+        kg: parseFloat(r[5]) || 1,
+        pventa: parseFloat(r[3]) || 0,
+        costo: parseFloat(r[4]) || 0,
+        bonus: r[6] === 'SI',
+      })).filter(p => r[7] === 'SI' || true);
+      toast('Precios actualizados desde Sheets ✓');
+    }
+    badge.className = 'sync-badge ok';
+    badge.innerHTML = '✓ Sync';
+  } catch(e) {
+    badge.className = 'sync-badge error';
+    badge.innerHTML = '⚠ Offline';
+    // Usa precios locales igual
+  }
+}
+
+async function getGoogleToken() {
+  // Retorna el token de Google si el usuario está autenticado con OAuth
+  // Por ahora retorna null (se implementa con Google Identity Services)
+  return null;
+}
+
+// ══ CERRAR JORNADA → GUARDAR EN SHEETS ══
+async function cerrarJornada() {
+  if (!lastState.nCli) { toast('Cargá clientes antes de cerrar'); return; }
+  const s = lastState;
+  const fila = [
+    'SAL' + Date.now(),
+    s.fecha,
+    SESSION.user,
+    SESSION.name,
+    SESSION.zona,
+    Math.round(s.kmTotal),
+    s.nCli,
+    s.totKg.toFixed(1),
+    s.kgClasico.toFixed(1),
+    s.cant,
+    Math.round(s.mBonus),
+    Math.round(s.totV),
+    Math.round(s.costoNafta),
+    Math.round(s.neta),
+    s.prodRows.map(r => r.label + ':' + r.kg.toFixed(1) + 'kg').join(' | ')
+  ];
+  try {
+    const token = await getGoogleToken();
+    if (!token) throw new Error('Sin token');
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:A:append?valueInputOption=USER_ENTERED`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: [fila] })
+    });
+    // Guardar clientes como frecuentes
+    s.clientData.filter(c => c.items.length > 0).forEach(c => {
+      const exists = FREQ_CLIENTS.findIndex(f => f.name.toLowerCase() === c.name.toLowerCase());
+      const entry = { name: c.name, addr: c.addr, pago: c.pago, obs: c.obs, items: c.items.map(i => ({ label: i.label, qty: i.qty })) };
+      if (exists >= 0) FREQ_CLIENTS[exists] = entry;
+      else FREQ_CLIENTS.unshift(entry);
+    });
+    FREQ_CLIENTS = FREQ_CLIENTS.slice(0, 50);
+    localStorage.setItem('cg_freq', JSON.stringify(FREQ_CLIENTS));
+    cargarFrecuentes();
+    toast('Jornada guardada en Sheets ✓');
+  } catch(e) {
+    // Guardar localmente si no hay conexión
+    const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
+    local.unshift({ ...lastState, fecha: s.fecha, rep: SESSION.name });
+    localStorage.setItem('cg_historial', JSON.stringify(local.slice(0, 30)));
+    toast('Guardado localmente (sin conexión)');
+  }
+  cargarHistorial();
+}
+
+// ══ CARGAR FRECUENTES ══
+function cargarFrecuentes() {
+  const el = document.getElementById('freq-list');
+  if (!FREQ_CLIENTS.length) return;
+  el.innerHTML = FREQ_CLIENTS.map((c, i) => `
+    <div class="ranking-row" style="cursor:pointer" onclick="cargarClienteFrecuente(${i})">
+      <span class="ranking-pos">${i+1}</span>
+      <div class="ranking-name">${c.name}<br><span style="font-size:10px;font-weight:400;color:var(--text3)">${c.addr || ''} · ${c.pago || ''}</span></div>
+      <span style="font-size:11px;color:var(--text3)">${c.items?.length || 0} prod.</span>
+    </div>`).join('');
+}
+
+function cargarClienteFrecuente(idx) {
+  const c = FREQ_CLIENTS[idx];
+  showTab('ruta');
+  addClient(c);
+  toast('Cliente cargado: ' + c.name);
+}
+
+// ══ CARGAR HISTORIAL ══
+function cargarHistorial() {
+  const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
+  const el = document.getElementById('historial-list');
+  if (!local.length) return;
+  el.innerHTML = local.map(s => `
+    <div class="ranking-row">
+      <div style="flex:1"><strong style="font-size:13px">${s.fecha}</strong><br>
+      <span style="font-size:11px;color:var(--text3)">${s.nCli} clientes · ${s.totKg?.toFixed(1)} kg · ${Math.round(s.kmTotal)} km</span></div>
+      <span style="font-family:'Nunito',sans-serif;font-weight:900;color:${s.neta>=0?'var(--green)':'var(--red)'};font-size:.95rem">${fmt(s.neta)}</span>
+    </div>`).join('');
+}
+
+// ══ CARGA MASIVA DESDE EXCEL ══
+function procesarArchivo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    const lines = text.split('\n').filter(l => l.trim()).slice(1);
+    let cargados = 0;
+    lines.forEach(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+      if (cols.length < 3) return;
+      const [nombre, addr, prodId, qty, pago, obs] = cols;
+      const prod = PRODS.find(p => p.id === prodId);
+      if (!prod) return;
+      if (cargados === 0 || clients[clients.length - 1]?.name !== nombre) {
+        addClient({ name: nombre, addr: addr || '', pago: pago || 'Efectivo', obs: obs || '' });
+        cargados++;
+      }
+      const cid = clients[clients.length - 1]?.id;
+      if (cid) addItemDirecto(cid, prodId, parseInt(qty) || 1);
+    });
+    toast(`${cargados} clientes cargados desde el archivo`);
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function descargarPlantilla() {
+  const csv = 'Cliente,Direccion,Producto_ID,Cantidad,Forma_Pago,Observaciones\nKiosco Sol,Av Mitre 100,c1,2,Efectivo,\nSuper Norte,San Martin 250,c2,1,Transferencia,Cliente fijo\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'ChipaGuru_Plantilla_Carga.csv';
+  a.click();
+}
+
+// ══ UI HELPERS ══
+function showTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'dashboard') cargarDashboard();
+  if (tab === 'exportar') cargarHistorial();
+}
+
+function toggleMode() {
+  darkMode = !darkMode;
+  document.body.classList.toggle('dark', darkMode);
+  localStorage.setItem('cg_dark', darkMode ? '1' : '0');
+  document.getElementById('mode-btn').innerHTML = darkMode ? '<i class="ti ti-sun"></i>' : '<i class="ti ti-moon"></i>';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function fmtDate() {
+  return new Date().toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function fmt(n) { return '$' + Math.round(n).toLocaleString('es-AR'); }
+
+function optsHtml() {
+  const cats = {};
+  PRODS.forEach(p => { if (!cats[p.cat]) cats[p.cat] = []; cats[p.cat].push(p); });
+  return Object.entries(cats).map(([cat, ps]) =>
+    `<optgroup label="${cat}">${ps.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}</optgroup>`
+  ).join('');
+}
+
+function calcBonus(kgC, pFab) {
+  const cant = Math.floor(kgC / 10), precio = kgC >= 100 ? 8150 : pFab;
+  return { cant, precio, monto: cant * precio };
+}
+
+// ══ CLIENTES ══
+function addClient(prefill = null) {
+  if (clients.length >= 20) return;
+  clientSeq++;
+  const cid = 'c' + clientSeq;
+  clients.push({ id: cid, items: [], open: false, name: prefill?.name || '' });
+  const idx = clients.length - 1;
+  const div = document.createElement('div');
+  div.className = 'client-card'; div.id = 'card-' + cid;
+  div.innerHTML = `
+    <div class="client-hdr">
+      <div class="client-num" id="num-${cid}">${idx+1}</div>
+      <input class="client-name-in" id="name-${cid}" placeholder="Nombre del cliente" value="${prefill?.name||''}" oninput="recalc()">
+      <button class="del-cli-btn" onclick="removeClient('${cid}')"><i class="ti ti-trash"></i></button>
+    </div>
+    <div class="client-extra">
+      <div><div class="ce-label">Dirección</div><input id="addr-${cid}" placeholder="Dirección" value="${prefill?.addr||''}" oninput="recalc()"></div>
+      <div><div class="ce-label">Forma de pago</div>
+        <select id="pago-${cid}" onchange="recalc()">
+          ${['Efectivo','Transferencia','Débito','Crédito','Cuenta corriente'].map(p=>`<option${p===(prefill?.pago||'Efectivo')?' selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="client-body" id="body-${cid}"></div>
+    <div class="client-footer">
+      <div class="cfl">
+        <button class="add-item-btn" onclick="addItem('${cid}')"><i class="ti ti-plus"></i> Producto</button>
+        <button class="toggle-detail" id="togbtn-${cid}" onclick="toggleDesglose('${cid}')"><i class="ti ti-calculator"></i> Ver cuentas</button>
+      </div>
+      <div class="client-total" id="total-${cid}" style="color:var(--text3)">—</div>
+    </div>
+    <div class="desglose" id="desglose-${cid}">
+      <div class="desglose-ttl">Desglose de la venta</div>
+      <div id="desglose-rows-${cid}"></div>
+    </div>`;
+  document.getElementById('clients-list').appendChild(div);
+  if (prefill?.items?.length) {
+    prefill.items.forEach(it => addItemDirecto(cid, it.id || it.prodId, it.qty || it.quantity || 1));
+  } else {
+    addItem(cid);
+  }
+  recalc();
+  document.getElementById('add-btn').disabled = clients.length >= 20;
+}
+
+function removeClient(cid) {
+  const idx = clients.findIndex(c => c.id === cid);
+  if (idx > -1) clients.splice(idx, 1);
+  document.getElementById('card-' + cid)?.remove();
+  clients.forEach((c, i) => { const el = document.getElementById('num-' + c.id); if (el) el.textContent = i + 1; });
+  recalc();
+  document.getElementById('add-btn').disabled = clients.length >= 20;
+}
+
+function toggleDesglose(cid) {
+  const c = clients.find(x => x.id === cid);
+  c.open = !c.open;
+  document.getElementById('desglose-' + cid).classList.toggle('open', c.open);
+  document.getElementById('togbtn-' + cid).innerHTML = c.open
+    ? '<i class="ti ti-chevron-up"></i> Ocultar'
+    : '<i class="ti ti-calculator"></i> Ver cuentas';
+}
+
+function addItem(cid) {
+  itemSeq++;
+  const iid = 'i' + itemSeq;
+  clients.find(x => x.id === cid)?.items.push(iid);
+  const row = document.createElement('div');
+  row.className = 'item-row'; row.id = 'irow-' + iid;
+  row.innerHTML = `
+    <select id="prod-${iid}" onchange="recalc()">${optsHtml()}</select>
+    <input type="number" id="qty-${iid}" value="1" min="1" max="500" oninput="recalc()">
+    <button class="del-item-btn" onclick="removeItem('${cid}','${iid}')"><i class="ti ti-x"></i></button>`;
+  document.getElementById('body-' + cid).appendChild(row);
+  recalc();
+}
+
+function addItemDirecto(cid, prodId, qty) {
+  itemSeq++;
+  const iid = 'i' + itemSeq;
+  clients.find(x => x.id === cid)?.items.push(iid);
+  const row = document.createElement('div');
+  row.className = 'item-row'; row.id = 'irow-' + iid;
+  row.innerHTML = `
+    <select id="prod-${iid}" onchange="recalc()">${optsHtml()}</select>
+    <input type="number" id="qty-${iid}" value="${qty}" min="1" max="500" oninput="recalc()">
+    <button class="del-item-btn" onclick="removeItem('${cid}','${iid}')"><i class="ti ti-x"></i></button>`;
+  document.getElementById('body-' + cid).appendChild(row);
+  const sel = document.getElementById('prod-' + iid);
+  if (sel) sel.value = prodId;
+  recalc();
+}
+
+function removeItem(cid, iid) {
+  const c = clients.find(x => x.id === cid);
+  if (!c) return;
+  c.items = c.items.filter(i => i !== iid);
+  document.getElementById('irow-' + iid)?.remove();
+  recalc();
+}
+
+// ══ RECALC ══
+function recalc() {
+  const kmTotal = parseFloat(document.getElementById('km-total').value) || 90;
+  const pTanque = parseFloat(document.getElementById('p-tanque').value) || 78000;
+  const kmTanque = parseFloat(document.getElementById('km-tanque').value) || 500;
+  const pFab = parseFloat(document.getElementById('precio-fab').value) || 8100;
+  const CKM = pTanque / kmTanque, costoNafta = kmTotal * CKM;
+
+  let kgClasico = 0;
+  clients.forEach(c => c.items.forEach(iid => {
+    const p = PRODS.find(x => x.id === document.getElementById('prod-' + iid)?.value);
+    const q = parseFloat(document.getElementById('qty-' + iid)?.value) || 1;
+    if (p && p.bonus) kgClasico += p.kg * q;
+  }));
+
+  const { cant, precio: pBonus, monto: mBonus } = calcBonus(kgClasico, pFab);
+  document.getElementById('bb-kg').textContent = kgClasico.toFixed(1) + ' kg';
+  document.getElementById('bb-monto').textContent = fmt(mBonus);
+  document.getElementById('bb-sub2').textContent = cant + ' bonus × ' + fmt(pBonus);
+  document.getElementById('bb-pbonus').textContent = fmt(pBonus);
+  document.getElementById('bb-tramo').textContent = kgClasico >= 100 ? 'precio mayorista +100' : 'precio fábrica';
+  document.getElementById('bb-extra').textContent = fmt(mBonus);
+  document.getElementById('bb-formula').innerHTML = kgClasico === 0
+    ? 'Cargá clientes con chipá clásico para ver el bonus automático.'
+    : `Vendés <strong>${kgClasico.toFixed(1)} kg</strong> clásico → <strong>${cant} bonus</strong> × ${fmt(pBonus)} = descuento de <strong>${fmt(mBonus)}</strong>.`;
+
+  let totV = 0, totC = 0, totKg = 0;
+  const pMap = {};
+  const clientData = [];
+
+  clients.forEach(c => {
+    let cG = 0, cK = 0, cC = 0, dRows = [], items = [];
+    c.items.forEach(iid => {
+      const p = PRODS.find(x => x.id === document.getElementById('prod-' + iid)?.value);
+      const q = parseFloat(document.getElementById('qty-' + iid)?.value) || 1;
+      if (!p) return;
+      const ing = p.pventa * q, cos = p.costo * q, kgV = p.kg * q, gain = ing - cos;
+      cG += gain; cK += kgV; cC += cos; totV += gain; totC += cos; totKg += kgV;
+      items.push({ label: p.label, qty: q, ing, cos, kgV, gain, bonus: p.bonus, pventa: p.pventa });
+      dRows.push(`<div class="drow"><div class="dprod">${p.label} × ${q}<span class="dtag">${p.bonus ? 'aplica bonus ✓' : 'sin bonus'}</span></div><div class="dnum">${fmt(ing)}</div><div class="dnum">${fmt(cos)}</div><div class="${gain >= 0 ? 'dpos' : 'dneg'}">${fmt(gain)}</div></div>`);
+      if (!pMap[p.id]) pMap[p.id] = { label: p.label, pventa: p.pventa, costo: p.costo, ing: 0, cos: 0, gan: 0, uni: 0, kg: 0 };
+      pMap[p.id].ing += ing; pMap[p.id].cos += cos; pMap[p.id].gan += gain; pMap[p.id].uni += q; pMap[p.id].kg += kgV;
+    });
+    const name = document.getElementById('name-' + c.id)?.value || 'Cliente';
+    const addr = document.getElementById('addr-' + c.id)?.value || '';
+    const pago = document.getElementById('pago-' + c.id)?.value || 'Efectivo';
+    clientData.push({ name, addr, pago, items, total: cG, kg: cK, costo: cC });
+    const tel = document.getElementById('total-' + c.id);
+    if (tel) { tel.textContent = c.items.length ? `Total: ${fmt(cG)}` : '—'; tel.style.color = cG > 0 ? 'var(--green)' : cG < 0 ? 'var(--red)' : 'var(--text3)'; }
+    const dr = document.getElementById('desglose-rows-' + c.id);
+    if (dr) dr.innerHTML = dRows.join('') + (dRows.length ? `<div class="dtotal-row"><span>Total <strong>${name}</strong></span><span>${cK.toFixed(1)} kg · <strong style="color:${cG >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(cG)}</strong></span></div>` : '');
+  });
+
+  const bruta = totV + mBonus, neta = bruta - costoNafta, netoKg = totKg > 0 ? neta / totKg : 0;
+  const nCli = clients.filter(c => c.items.length > 0).length;
+
+  lastState = { fecha: fmtDate(), kmTotal, costoNafta, CKM, kgClasico, cant, pBonus, mBonus, totV, bruta, neta, netoKg, nCli, totKg, clientData, prodRows: Object.values(pMap) };
+
+  document.getElementById('metrics').innerHTML = `
+    <div class="m"><div class="ml">Clientes</div><div class="mv y">${nCli}</div></div>
+    <div class="m"><div class="ml">Km</div><div class="mv w">${Math.round(kmTotal)}</div></div>
+    <div class="m"><div class="ml">Kg vendidos</div><div class="mv w">${totKg.toFixed(1)}</div></div>
+    <div class="m"><div class="ml">Gan. ventas</div><div class="mv w">${fmt(totV)}</div></div>
+    <div class="m"><div class="ml">Bonus</div><div class="mv g">${fmt(mBonus)}</div></div>
+    <div class="m"><div class="ml">Nafta</div><div class="mv r">${fmt(costoNafta)}</div></div>
+    <div class="m"><div class="ml">Gan. neta</div><div class="mv ${neta >= 0 ? 'g' : 'r'}">${fmt(neta)}</div></div>`;
+
+  const rb = document.getElementById('result-bar');
+  rb.className = 'result-bar ' + (neta < 0 ? 'neg' : netoKg < 2000 ? 'adj' : 'pos');
+  document.getElementById('rt').textContent = nCli === 0 ? 'Agregá clientes para ver el análisis' : neta < 0 ? '✗ Esta salida no cubre los costos' : netoKg < 2000 ? '⚠ Margen ajustado' : '✓ Salida rentable';
+  document.getElementById('rd').innerHTML = nCli === 0 ? 'Completá los clientes del día.' : `Ventas: <strong>${fmt(totV)}</strong> + bonus: <strong>${fmt(mBonus)}</strong> = bruta: <strong>${fmt(bruta)}</strong> − nafta: <strong>${fmt(costoNafta)}</strong> = neta: <strong>${fmt(neta)}</strong>.`;
+
+  const rows = Object.values(pMap).sort((a, b) => b.gan - a.gan);
+  document.getElementById('prod-tbody').innerHTML = rows.length === 0
+    ? '<tr><td colspan="7" style="color:var(--text3);text-align:center;padding:1rem">Sin datos todavía</td></tr>'
+    : rows.map((r, i) => { const m = r.ing > 0 ? Math.round(r.gan / r.ing * 100) : 0; return `<tr class="${i === 0 ? 'best' : ''}"><td>${r.label}</td><td>${r.uni}</td><td>${fmt(r.pventa)}</td><td>${fmt(r.costo)}</td><td>${fmt(r.ing)}</td><td>${fmt(r.gan)}</td><td><span class="badge ${m >= 30 ? 'b-g' : m >= 15 ? 'b-a' : 'b-r'}">${m}%</span></td></tr>`; }).join('');
+}
+
+// ══ DASHBOARD (admin) ══
+async function cargarDashboard() {
+  const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
+  const mesActual = new Date().toLocaleDateString('es-AR', { month: '2-digit', year: 'numeric' });
+  const delMes = local.filter(s => s.fecha && s.fecha.includes(mesActual.split('/')[1]));
+  const totalKg = delMes.reduce((a, s) => a + (parseFloat(s.totKg) || 0), 0);
+  const totalNeta = delMes.reduce((a, s) => a + (parseFloat(s.neta) || 0), 0);
+  document.getElementById('d-reps').textContent = '—';
+  document.getElementById('d-salidas').textContent = delMes.length;
+  document.getElementById('d-kg').textContent = totalKg.toFixed(1) + ' kg';
+  document.getElementById('d-ganancia').textContent = fmt(totalNeta);
+  const rep_map = {};
+  local.forEach(s => {
+    if (!rep_map[s.rep]) rep_map[s.rep] = { neta: 0, salidas: 0 };
+    rep_map[s.rep].neta += parseFloat(s.neta) || 0;
+    rep_map[s.rep].salidas++;
+  });
+  const ranking = Object.entries(rep_map).sort((a, b) => b[1].neta - a[1].neta);
+  document.getElementById('ranking-list').innerHTML = ranking.length ? ranking.map(([name, data], i) =>
+    `<div class="ranking-row"><span class="ranking-pos">${i + 1}</span><div class="ranking-name">${name}<br><span style="font-size:10px;font-weight:400;color:var(--text3)">${data.salidas} salidas</span></div><span class="ranking-val">${fmt(data.neta)}</span></div>`
+  ).join('') : '<div style="text-align:center;padding:2rem;color:var(--text3)">Cerrá jornadas para ver el ranking</div>';
+}
+
+// ══ GENERAR REMITOS ══
+function generarRemitos() {
+  const s = lastState;
+  if (!s.nCli) { toast('Cargá clientes primero'); return; }
+  remitoSeq++;
+  function remitoHTML(c, num) {
+    return `<div class="remito">
+      <div class="rh"><div class="logo-r"><span>CHIPÁ<br>GURÚ</span></div><div class="meta-r"><strong>REMITO N° ${String(num).padStart(4,'0')}</strong><br>${s.fecha}</div></div>
+      <div class="rfields">
+        <div class="rf"><label>Cliente</label><span>${c.name||'—'}</span></div>
+        <div class="rf"><label>Dirección</label><span>${c.addr||'—'}</span></div>
+        <div class="rf"><label>Forma de pago</label><span>${c.pago||'Efectivo'}</span></div>
+        <div class="rf"><label>Representante</label><span>${SESSION.name}</span></div>
+      </div>
+      <table class="rt"><thead><tr><th>Producto</th><th>Cant.</th><th>Precio unit.</th><th>Total</th></tr></thead>
+      <tbody>${c.items.map(it=>`<tr><td>${it.label}</td><td style="text-align:center">${it.qty}</td><td style="text-align:right">${fmt(it.pventa)}</td><td style="text-align:right;font-weight:800">${fmt(it.ing)}</td></tr>`).join('')}</tbody></table>
+      <div class="rtotal"><span>Total a pagar</span><strong>${fmt(c.items.reduce((a,i)=>a+i.ing,0))}</strong></div>
+      <div class="rfirma"><div>Firma cliente</div><div>Firma representante</div></div>
+    </div>`;
+  }
+  const css = `@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}body{font-family:'Nunito',sans-serif;background:#fff}
+  .page{width:210mm;padding:8mm;display:flex;flex-direction:column;gap:5mm}
+  .remito{border:2px solid #F0C97E;border-radius:8px;padding:5mm;flex:1}
+  .rh{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #F0C97E;padding-bottom:3mm;margin-bottom:3mm}
+  .logo-r{background:#F0C97E;border-radius:8px;padding:4px 10px;font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;color:#fff;line-height:1.1;text-align:center}
+  .meta-r{text-align:right;font-size:10px;color:#888}.meta-r strong{font-size:12px;color:#3A2A0A;display:block}
+  .rfields{display:grid;grid-template-columns:1fr 1fr;gap:2mm;margin-bottom:3mm;font-size:10px}
+  .rf label{font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:#9A7848;font-weight:800;display:block}
+  .rf span{font-weight:700;color:#3A2A0A;border-bottom:1px solid #F0C97E;display:block;padding-bottom:1px;min-height:13px}
+  .rt{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:2mm}
+  .rt thead tr{background:#F0C97E}.rt thead th{padding:4px 5px;text-align:left;font-size:8px;font-weight:800;text-transform:uppercase;color:#fff}
+  .rt tbody tr{border-bottom:1px solid #F7F0E4}.rt tbody td{padding:3px 5px;color:#3A2A0A}
+  .rtotal{display:flex;justify-content:space-between;padding-top:2mm;border-top:2px solid #F0C97E;font-size:11px;color:#6A5030}
+  .rtotal strong{font-size:14px;font-weight:900;color:#A07830}
+  .rfirma{display:grid;grid-template-columns:1fr 1fr;gap:8mm;margin-top:3mm}
+  .rfirma div{border-top:1px solid #DDD0B0;padding-top:2mm;font-size:8px;color:#9A7848;text-align:center}
+  .cut{border:none;border-top:1.5px dashed #F0C97E;position:relative}
+  .cut::after{content:'✂';position:absolute;left:50%;top:-8px;transform:translateX(-50%);background:#fff;padding:0 4px;font-size:12px;color:#F0C97E}
+  @media print{body{padding:0}}`;
+  const active = s.clientData.filter(c => c.items.length > 0);
+  let pages = '';
+  for (let i = 0; i < active.length; i += 2) {
+    pages += `<div class="page">${remitoHTML(active[i], remitoSeq*100+(i+1))}
+    <hr class="cut">
+    ${active[i+1] ? remitoHTML(active[i+1], remitoSeq*100+(i+2)) : '<div style="flex:1;border:2px dashed #eee;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#ddd;font-size:12px">—</div>'}</div>`;
+    if (i + 2 < active.length) pages += '<div style="page-break-after:always"></div>';
+  }
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Remitos · ${s.fecha}</title><style>${css}</style></head><body>${pages}<script>window.onload=()=>window.print()<\/script></body></html>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  a.download = `ChipaGuru_Remitos_${s.fecha.replace(/\//g,'-')}.html`;
+  a.click();
+}
+
+// ══ PEDIDO A FÁBRICA ══
+function generarPedidoFabrica() {
+  const s = lastState;
+  if (!s.nCli) { toast('Cargá clientes primero'); return; }
+  const rows = s.prodRows.sort((a,b) => b.kg - a.kg).map(r =>
+    `<tr><td>${r.label}</td><td style="text-align:center;font-weight:800">${r.uni}</td><td style="text-align:center">${r.kg.toFixed(1)} kg</td><td style="text-align:right">${fmt(r.costo)}</td><td style="text-align:right;font-weight:800">${fmt(r.cos)}</td></tr>`
+  ).join('');
+  const totalCosto = s.prodRows.reduce((a,r) => a+r.cos, 0);
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido Fábrica · ${s.fecha}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Nunito',sans-serif;padding:15mm;color:#3A2A0A;max-width:210mm;margin:0 auto}
+  .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8mm;padding-bottom:4mm;border-bottom:3px solid #F0C97E}
+  .logo{background:#F0C97E;border-radius:10px;padding:6px 14px;font-weight:900;font-size:15px;color:#fff;line-height:1.1;text-align:center}
+  h1{font-size:18px;font-weight:900}p.sub{font-size:11px;color:#9A7848;margin-top:3px}
+  h2{font-size:12px;font-weight:900;color:#A07830;text-transform:uppercase;letter-spacing:.08em;margin:5mm 0 3mm;padding-bottom:2mm;border-bottom:1.5px solid #F0C97E}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:5mm}
+  thead tr{background:#F0C97E}thead th{padding:6px 9px;text-align:left;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:#fff}
+  tbody tr{border-bottom:1px solid #F7F0E4}tbody td{padding:7px 9px;color:#3A2A0A}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:3mm;margin-bottom:5mm}
+  .sc{border:1.5px solid #F0C97E;border-radius:8px;padding:3mm;text-align:center}
+  .sc .sl{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#9A7848;font-weight:800;margin-bottom:2px}
+  .sc .sv{font-size:15px;font-weight:900}
+  .bonus{background:#FBF4E8;border:2px solid #F0C97E;border-radius:8px;padding:3mm;margin-bottom:5mm;font-size:12px;line-height:1.8}
+  .bonus strong{color:#A07830}
+  .firma{display:grid;grid-template-columns:1fr 1fr;gap:10mm;margin-top:10mm}
+  .fl{border-top:1.5px solid #DDD0B0;padding-top:2mm;font-size:10px;color:#9A7848;text-align:center}
+  @media print{body{padding:8mm}}</style></head><body>
+  <div class="hdr"><div class="logo">CHIPÁ<br>GURÚ</div><div><h1>Pedido a Fábrica</h1><p class="sub">Fecha: ${s.fecha} · Rep: ${SESSION.name} · ${SESSION.zona}</p></div></div>
+  <div class="summary">
+    <div class="sc"><div class="sl">Clientes</div><div class="sv">${s.nCli}</div></div>
+    <div class="sc"><div class="sl">Kg totales</div><div class="sv">${s.totKg.toFixed(1)}</div></div>
+    <div class="sc"><div class="sl">Costo pedido</div><div class="sv">${fmt(totalCosto)}</div></div>
+  </div>
+  <h2>Detalle del pedido</h2>
+  <table><thead><tr><th>Producto</th><th style="text-align:center">Unidades</th><th style="text-align:center">Kg</th><th style="text-align:right">Precio unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
+  <tbody>${rows}</tbody>
+  <tfoot><tr style="background:#FBF4E8;font-weight:800"><td colspan="2">TOTAL</td><td style="text-align:center">${s.totKg.toFixed(1)} kg</td><td></td><td style="text-align:right;font-size:14px;color:#A07830">${fmt(totalCosto)}</td></tr></tfoot></table>
+  <div class="bonus"><strong>Bonificación:</strong> ${s.kgClasico.toFixed(1)} kg clásico → <strong>${s.cant} kg bonus</strong> × ${fmt(s.pBonus)} = descuento <strong>${fmt(s.mBonus)}</strong><br>Total a pagar a fábrica: <strong style="font-size:15px">${fmt(totalCosto - s.mBonus)}</strong></div>
+  <h2>Distribución por cliente</h2>
+  <table><thead><tr><th>Cliente</th><th>Dirección</th><th>Productos</th><th style="text-align:right">Total venta</th><th>Pago</th></tr></thead>
+  <tbody>${s.clientData.filter(c=>c.items.length>0).map(c=>`<tr><td><strong>${c.name}</strong></td><td style="font-size:11px">${c.addr||'—'}</td><td style="font-size:11px">${c.items.map(i=>i.label+'×'+i.qty).join(', ')}</td><td style="text-align:right;font-weight:800">${fmt(c.items.reduce((a,i)=>a+i.ing,0))}</td><td style="font-size:11px">${c.pago}</td></tr>`).join('')}</tbody></table>
+  <div class="firma"><div class="fl">Firma del representante</div><div class="fl">Firma / sello fábrica</div></div>
+  <script>window.onload=()=>window.print()<\/script></body></html>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  a.download = `ChipaGuru_PedidoFabrica_${s.fecha.replace(/\//g,'-')}.html`;
+  a.click();
+}
+
+function generarResumenDia() {
+  const s = lastState;
+  if (!s.nCli) { toast('Cargá clientes primero'); return; }
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Resumen · ${s.fecha}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Nunito',sans-serif;background:#F7F0E4;padding:1.5rem;color:#3A2A0A}
+  .hdr{background:#F0C97E;padding:1rem 1.2rem;border-radius:12px;display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem}
+  .logo{background:#fff;border-radius:8px;padding:4px 10px;font-weight:900;font-size:11px;color:#F0C97E;line-height:1.1}
+  h1{font-size:1.3rem;font-weight:900;color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+  .sc{background:#fff;border:1.5px solid #DDD0B0;border-radius:10px;padding:.75rem 1rem}
+  .sl{font-size:10px;color:#9A7848;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-bottom:3px}
+  .sv{font-size:1.2rem;font-weight:900}
+  @media print{body{padding:.5rem;background:#fff}}</style></head><body>
+  <div class="hdr"><div class="logo">CHIPÁ<br>GURÚ</div><div><h1>Resumen de jornada</h1><p style="color:rgba(255,255,255,.8);font-size:11px">${s.fecha} · ${SESSION.name}</p></div></div>
+  <div class="grid">
+    <div class="sc"><div class="sl">Clientes</div><div class="sv" style="color:#A07830">${s.nCli}</div></div>
+    <div class="sc"><div class="sl">Km</div><div class="sv">${Math.round(s.kmTotal)}</div></div>
+    <div class="sc"><div class="sl">Kg vendidos</div><div class="sv">${s.totKg.toFixed(1)}</div></div>
+    <div class="sc"><div class="sl">Gan. ventas</div><div class="sv">${fmt(s.totV)}</div></div>
+    <div class="sc"><div class="sl">Bonus</div><div class="sv" style="color:#2D8A5E">${fmt(s.mBonus)}</div></div>
+    <div class="sc"><div class="sl">Nafta</div><div class="sv" style="color:#C0392B">${fmt(s.costoNafta)}</div></div>
+    <div class="sc"><div class="sl">Gan. neta</div><div class="sv" style="color:${s.neta>=0?'#2D8A5E':'#C0392B'};font-size:1.4rem">${fmt(s.neta)}</div></div>
+  </div>
+  <script>window.onload=()=>window.print()<\/script></body></html>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  a.download = `ChipaGuru_Resumen_${s.fecha.replace(/\//g,'-')}.html`;
+  a.click();
+}
+
+// Init
+addClient();
+addClient();
+</script>
+
+<!--
+══════════════════════════════════════════════════════════════════
+README — CÓMO PUBLICAR EN GITHUB PAGES
+══════════════════════════════════════════════════════════════════
+
+1. CREAR EL REPO EN GITHUB
+   - Ir a github.com → New repository
+   - Nombre: chipaguru-app (o el que quieras)
+   - Público (GitHub Pages gratuito requiere repo público)
+   - Crear sin README
+
+2. SUBIR LOS ARCHIVOS
+   Desde tu computadora, en una carpeta con los 3 archivos:
+     git init
+     git add .
+     git commit -m "Chipá Gurú PWA v1"
+     git remote add origin https://github.com/TU_USUARIO/chipaguru-app.git
+     git push -u origin main
+
+3. ACTIVAR GITHUB PAGES
+   - En el repo: Settings → Pages
+   - Source: Deploy from a branch → main → / (root)
+   - Guardar → en ~2 min el sitio estará en:
+     https://TU_USUARIO.github.io/chipaguru-app/
+
+4. CONFIGURAR GOOGLE OAUTH (para conectar con Sheets)
+   - Ir a console.cloud.google.com
+   - Crear proyecto "Chipá Gurú"
+   - Habilitar: Google Sheets API + Google Drive API
+   - Crear credencial OAuth 2.0 → Web application
+   - Authorized origins: https://TU_USUARIO.github.io
+   - Copiar el Client ID y reemplazar en CONFIG.GOOGLE_CLIENT_ID arriba
+
+5. INSTALAR EN EL CELULAR
+   Android: abrir en Chrome → menú (⋮) → "Agregar a pantalla de inicio"
+   iPhone:  abrir en Safari → compartir (□↑) → "Agregar a pantalla de inicio"
+
+══════════════════════════════════════════════════════════════════
+-->
+</body>
+</html>

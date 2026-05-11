@@ -806,8 +806,6 @@ function addClient(prefill = null) {
   document.getElementById('clients-list').appendChild(div);
   if (prefill?.items?.length) {
     prefill.items.forEach(it => addItemDirecto(cid, it.id || it.prodId, it.qty || it.quantity || 1));
-  } else {
-    addItem(cid);
   }
   recalc();
   document.getElementById('add-btn').disabled = clients.length >= 20;

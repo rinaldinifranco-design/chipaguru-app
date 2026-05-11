@@ -1087,11 +1087,45 @@ function generarRemitos() {
   @media print{body{padding:0}}`;
   const active = s.clientData.filter(c => c.items.length > 0);
   if (!active.length) { toast('No hay clientes con pedidos'); return; }
-  active.forEach((c, i) => {
+    window._rActive = active; window._rState = s; window._rHTML = remitoHTML; window._rCSS = css;
+  const ol = document.createElement('div');
+  ol.id = 'rem-ol';
+  ol.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  const rows = active.map((c,i) => '<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:#F8F8F8;cursor:pointer;font-size:14px"><input type="checkbox" class="rcb" value="'+i+'" checked onchange="_rUpd()" style="width:16px;height:16px;accent-color:#1F497D"><span>'+c.name+'</span></label>').join('');
+  ol.innerHTML = '<div style="background:#fff;border-radius:16px;padding:24px;max-width:400px;width:100%;max-height:85vh;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.3)"><div style="font-size:17px;font-weight:800;color:#1F497D">📄 Descargar remitos</div><button id="rsa" onclick="_rSelAll()" style="background:#E8F4FB;border:1.5px solid #4472C4;border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;text-align:left">Seleccionar todos</button><div style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px">'+rows+'</div><div style="display:flex;gap:10px;margin-top:4px"><button onclick="document.getElementById(\'rem-ol\').remove()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #ccc;background:#fff;font-size:14px;cursor:pointer">Cancelar</button><button id="rdl" onclick="_confirmarRemitos()" style="flex:2;padding:10px;border-radius:8px;border:none;background:#1F497D;color:#fff;font-size:14px;font-weight:700;cursor:pointer">Descargar '+active.length+' PDF(s)</button></div></div>';
+  document.body.appendChild(ol);
+}
+
+function _rUpd() {
+  const n = [...document.querySelectorAll('.rcb')].filter(c=>c.checked).length;
+  const btn = document.getElementById('rdl');
+  if (btn) btn.textContent = 'Descargar '+n+' PDF(s)';
+}
+
+function _rSelAll() {
+  const cbs = [...document.querySelectorAll('.rcb')];
+  const allChecked = cbs.every(c=>c.checked);
+  cbs.forEach(c=>c.checked=!allChecked);
+  document.getElementById('rsa').textContent = allChecked ? 'Seleccionar todos' : 'Deseleccionar todos';
+  _rUpd();
+}
+
+function _confirmarRemitos() {
+  const sel = [...document.querySelectorAll('.rcb')].filter(c=>c.checked).map(c=>window._rActive[+c.value]);
+  if (!sel.length) { toast('Seleccioná al menos un cliente'); return; }
+  window._rSel = sel;
+  const box = document.querySelector('#rem-ol > div');
+  box.innerHTML = '<div style="font-size:17px;font-weight:800;color:#1F497D">¿Estás seguro?</div><div style="font-size:14px;color:#333;line-height:1.7;margin:4px 0">Vas a descargar <strong>'+sel.length+' PDF'+(sel.length!==1?'s':'')+'</strong>:<br>'+sel.map(c=>'• '+c.name).join('<br>')+'</div><div style="display:flex;gap:10px;margin-top:8px"><button onclick="document.getElementById(\'rem-ol\').remove()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #ccc;background:#fff;font-size:14px;cursor:pointer">Cancelar</button><button onclick="_ejecutarRemitos()" style="flex:2;padding:10px;border-radius:8px;border:none;background:#27AE60;color:#fff;font-size:14px;font-weight:700;cursor:pointer">✓ Confirmar descarga</button></div>';
+}
+
+function _ejecutarRemitos() {
+  document.getElementById('rem-ol').remove();
+  const sel = window._rSel, s = window._rState;
+  sel.forEach((c,i) => {
     setTimeout(async () => {
       const wrapper = document.createElement('div');
       wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:white;';
-      wrapper.innerHTML = `<style>${css}</style>${remitoHTML(c, remitoSeq*100+(i+1))}`;
+      wrapper.innerHTML = '<style>'+window._rCSS+'</style>'+window._rHTML(c, remitoSeq*100+(i+1));
       document.body.appendChild(wrapper);
       try {
         const canvas = await html2canvas(wrapper, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
@@ -1101,14 +1135,14 @@ function generarRemitos() {
         const w = 210, h = Math.min(297, canvas.height * 210 / canvas.width);
         pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, w, h);
         const nombre = c.name.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g, '').trim().replace(/\s+/g, '_');
-        pdf.save(`Remito_${nombre}_${s.fecha.replace(/\//g,'-')}.pdf`);
+        pdf.save('Remito_'+nombre+'_'+s.fecha.replace(/\//g,'-')+'.pdf');
       } catch(e) {
         if (wrapper.parentNode) document.body.removeChild(wrapper);
         toast('Error PDF: ' + e.message);
       }
     }, i * 2000);
   });
-  toast(`Generando ${active.length} PDF${active.length !== 1 ? 's' : ''}...`);
+  toast('Generando '+sel.length+' PDF'+(sel.length !== 1 ? 's' : '')+'...');
 }
 
 // ══ PEDIDO A FÁBRICA ══

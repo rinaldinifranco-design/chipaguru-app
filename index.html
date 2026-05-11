@@ -510,6 +510,7 @@ function doLogin() {
   _tokenClient.requestAccessToken({
     callback: async (resp) => {
       if (resp && resp.error) { toast('Error Google: ' + resp.error); return; }
+      if (resp.access_token) { _accessToken = resp.access_token; _tokenExpiry = Date.now() + ((resp.expires_in||3600)-60)*1000; }
       if (window._repPendingUser) {
         await validarYCompletarLoginRep();
       } else {

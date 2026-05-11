@@ -1084,18 +1084,18 @@ function generarRemitos() {
   .cut::after{content:'✂';position:absolute;left:50%;top:-8px;transform:translateX(-50%);background:#fff;padding:0 4px;font-size:12px;color:#F0C97E}
   @media print{body{padding:0}}`;
   const active = s.clientData.filter(c => c.items.length > 0);
-  let pages = '';
-  for (let i = 0; i < active.length; i += 2) {
-    pages += `<div class="page">${remitoHTML(active[i], remitoSeq*100+(i+1))}
-    <hr class="cut">
-    ${active[i+1] ? remitoHTML(active[i+1], remitoSeq*100+(i+2)) : '<div style="flex:1;border:2px dashed #eee;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#ddd;font-size:12px">—</div>'}</div>`;
-    if (i + 2 < active.length) pages += '<div style="page-break-after:always"></div>';
-  }
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Remitos · ${s.fecha}</title><style>${css}</style></head><body>${pages}<script>window.onload=()=>window.print()<\/script></body></html>`;
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-  a.download = `ChipaGuru_Remitos_${s.fecha.replace(/\//g,'-')}.html`;
-  a.click();
+  if (!active.length) { toast('No hay clientes con pedidos'); return; }
+  active.forEach((c, i) => {
+    const doc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Remito ${c.name} · ${s.fecha}</title><style>${css}</style></head><body>${remitoHTML(c, remitoSeq*100+(i+1))}</body></html>`;
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([doc], { type: 'text/html' }));
+      const nombre = c.name.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g, '').trim().replace(/\s+/g, '_');
+      a.download = `Remito_${nombre}_${s.fecha.replace(/\//g,'-')}.html`;
+      a.click();
+    }, i * 800);
+  });
+  toast(`Descargando ${active.length} remito${active.length !== 1 ? 's' : ''}...`);
 }
 
 // ══ PEDIDO A FÁBRICA ══

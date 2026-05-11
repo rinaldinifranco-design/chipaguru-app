@@ -490,14 +490,22 @@ function doLogin() {
       _tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: CONFIG.GOOGLE_CLIENT_ID,
             scope: 'https://www.googleapis.com/auth/spreadsheets',
-            callback: (resp) => {
+            callback: async (resp) => {
                     if (resp.error) {
                               if (_pendingResolve) { _pendingResolve(null); _pendingResolve = null; }
+                              toast('Error Google: ' + resp.error);
                               return;
                     }
                     _accessToken = resp.access_token;
                     _tokenExpiry = Date.now() + (parseInt(resp.expires_in, 10) - 60) * 1000;
-                    if (_pendingResolve) { _pendingResolve(_accessToken); _pendingResolve = null; }
+                    if (_pendingResolve) { _pendingResolve(_accessToken); _pendingResolve = null; return; }
+                    if (window._repPendingUser) {
+                              await validarYCompletarLoginRep();
+                    } else {
+                              SESSION = { user: 'google', name: 'Administrador', role: 'admin', zona: 'Todas' };
+                              localStorage.setItem('cg_session', JSON.stringify(SESSION));
+                              bootApp();
+                    }
             }
       });
   }
@@ -507,19 +515,7 @@ function doLogin() {
     toast('Completá GOOGLE_CLIENT_ID en CONFIG'); return;
   }
   if (!_tokenClient) { toast('Google cargando, reintentá...'); return; }
-  _tokenClient.requestAccessToken({
-    callback: async (resp) => {
-      if (resp && resp.error) { toast('Error Google: ' + resp.error); return; }
-      if (resp.access_token) { _accessToken = resp.access_token; _tokenExpiry = Date.now() + ((resp.expires_in||3600)-60)*1000; }
-      if (window._repPendingUser) {
-        await validarYCompletarLoginRep();
-      } else {
-        SESSION = { user: 'google', name: 'Administrador', role: 'admin', zona: 'Todas' };
-        localStorage.setItem('cg_session', JSON.stringify(SESSION));
-        bootApp();
-      }
-    }
-  });
+  _tokenClient.requestAccessToken({});
 }
 
 function doLogout() {

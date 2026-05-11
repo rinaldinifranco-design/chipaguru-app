@@ -13,6 +13,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
   <!-- Google Identity Services — OAuth 2.0 para Sheets API -->
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleAuth()"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>h
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1060,7 +1062,6 @@ function generarRemitos() {
       <table class="rt"><thead><tr><th>Producto</th><th>Cant.</th><th>Precio unit.</th><th>Total</th></tr></thead>
       <tbody>${c.items.map(it=>`<tr><td>${it.label}</td><td style="text-align:center">${it.qty}</td><td style="text-align:right">${fmt(it.pventa)}</td><td style="text-align:right;font-weight:800">${fmt(it.ing)}</td></tr>`).join('')}</tbody></table>
       <div class="rtotal"><span>Total a pagar</span><strong>${fmt(c.items.reduce((a,i)=>a+i.ing,0))}</strong></div>
-      <div class="rfirma"><div>Firma cliente</div><div>Firma representante</div></div>
     </div>`;
   }
   const css = `@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
@@ -1078,24 +1079,33 @@ function generarRemitos() {
   .rt tbody tr{border-bottom:1px solid #F7F0E4}.rt tbody td{padding:3px 5px;color:#3A2A0A}
   .rtotal{display:flex;justify-content:space-between;padding-top:2mm;border-top:2px solid #F0C97E;font-size:11px;color:#6A5030}
   .rtotal strong{font-size:14px;font-weight:900;color:#A07830}
-  .rfirma{display:grid;grid-template-columns:1fr 1fr;gap:8mm;margin-top:3mm}
-  .rfirma div{border-top:1px solid #DDD0B0;padding-top:2mm;font-size:8px;color:#9A7848;text-align:center}
-  .cut{border:none;border-top:1.5px dashed #F0C97E;position:relative}
+    .cut{border:none;border-top:1.5px dashed #F0C97E;position:relative}
   .cut::after{content:'✂';position:absolute;left:50%;top:-8px;transform:translateX(-50%);background:#fff;padding:0 4px;font-size:12px;color:#F0C97E}
   @media print{body{padding:0}}`;
   const active = s.clientData.filter(c => c.items.length > 0);
   if (!active.length) { toast('No hay clientes con pedidos'); return; }
   active.forEach((c, i) => {
-    const doc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Remito ${c.name} · ${s.fecha}</title><style>${css}</style></head><body>${remitoHTML(c, remitoSeq*100+(i+1))}</body></html>`;
-    setTimeout(() => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([doc], { type: 'text/html' }));
-      const nombre = c.name.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g, '').trim().replace(/\s+/g, '_');
-      a.download = `Remito_${nombre}_${s.fecha.replace(/\//g,'-')}.html`;
-      a.click();
-    }, i * 800);
+    setTimeout(async () => {
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:white;';
+      wrapper.innerHTML = `<style>${css}</style>${remitoHTML(c, remitoSeq*100+(i+1))}`;
+      document.body.appendChild(wrapper);
+      try {
+        const canvas = await html2canvas(wrapper, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+        document.body.removeChild(wrapper);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const w = 210, h = Math.min(297, canvas.height * 210 / canvas.width);
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, w, h);
+        const nombre = c.name.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g, '').trim().replace(/\s+/g, '_');
+        pdf.save(`Remito_${nombre}_${s.fecha.replace(/\//g,'-')}.pdf`);
+      } catch(e) {
+        if (wrapper.parentNode) document.body.removeChild(wrapper);
+        toast('Error PDF: ' + e.message);
+      }
+    }, i * 2000);
   });
-  toast(`Descargando ${active.length} remito${active.length !== 1 ? 's' : ''}...`);
+  toast(`Generando ${active.length} PDF${active.length !== 1 ? 's' : ''}...`);
 }
 
 // ══ PEDIDO A FÁBRICA ══

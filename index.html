@@ -411,6 +411,7 @@ const CONFIG = {
   SHEET_REPRESENTANTES: '1Dh8qZxakXSaJwgbXYJjBZ-s2NgqT0YpF1tivvN47WPU',
   // Reemplazá con tu Client ID de Google OAuth
   // (ver instrucciones en README al final del archivo)
+  SHEETS_API_KEY: 'AIzaSyASea2_EaAyQF4ur8FrrkaIsJN59oc4mU8',
   GOOGLE_CLIENT_ID: '47069732506-4vdl6vtu562bku77vo5dpsetg2cgj7ec.apps.googleusercontent.com',
 };
 
@@ -475,7 +476,7 @@ function doLogin() {
   window._repPendingUser = user;
   window._repPendingPass = pass;
   toast('Verificando credenciales...');
-  loginGoogle();
+  validarYCompletarLoginRep();
 }
 
 // ── Variables de estado del token Google ──
@@ -495,14 +496,10 @@ function doLogin() {
                               if (_pendingResolve) { _pendingResolve(null); _pendingResolve = null; }
                               toast('Error Google: ' + resp.error);
                               return;
-                    }
                     _accessToken = resp.access_token;
                     _tokenExpiry = Date.now() + (parseInt(resp.expires_in, 10) - 60) * 1000;
                     if (_pendingResolve) { _pendingResolve(_accessToken); _pendingResolve = null; return; }
-                    if (window._repPendingUser) {
-                              await validarYCompletarLoginRep();
-                    } else {
-                              SESSION = { user: 'google', name: 'Administrador', role: 'admin', zona: 'Todas' };
+                    SESSION = { user: 'google', name: 'Administrador', role: 'admin', zona: 'Todas' };
                               localStorage.setItem('cg_session', JSON.stringify(SESSION));
                               bootApp();
                     }
@@ -544,8 +541,7 @@ async function validarYCompletarLoginRep() {
   window._repPendingUser = null;
   window._repPendingPass = null;
   try {
-    const token = await getGoogleToken();
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_REPRESENTANTES}/values/Representantes!A:F?access_token=${token}`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_REPRESENTANTES}/values/Representantes!A:F?key=${CONFIG.SHEETS_API_KEY}`;
     const resp = await fetch(url);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();

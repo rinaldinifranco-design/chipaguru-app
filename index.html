@@ -1135,7 +1135,6 @@ function generarPedidoFabrica() {
   @media print{body{padding:8mm}}</style></head><body>
   <div class="hdr"><div class="logo">CHIPÁ<br>GURÚ</div><div><h1>Pedido a Fábrica</h1><p class="sub">Fecha: ${s.fecha} · Rep: ${SESSION.name} · ${SESSION.zona}</p></div></div>
   <div class="summary">
-    <div class="sc"><div class="sl">Clientes</div><div class="sv">${s.nCli}</div></div>
     <div class="sc"><div class="sl">Kg totales</div><div class="sv">${s.totKg.toFixed(1)}</div></div>
     <div class="sc"><div class="sl">Costo pedido</div><div class="sv">${fmt(totalCosto)}</div></div>
   </div>
@@ -1144,9 +1143,8 @@ function generarPedidoFabrica() {
   <tbody>${rows}</tbody>
   <tfoot><tr style="background:#FBF4E8;font-weight:800"><td colspan="2">TOTAL</td><td style="text-align:center">${s.totKg.toFixed(1)} kg</td><td></td><td style="text-align:right;font-size:14px;color:#A07830">${fmt(totalCosto)}</td></tr></tfoot></table>
   <div class="bonus"><strong>Bonificación:</strong> ${s.kgClasico.toFixed(1)} kg clásico → <strong>${s.cant} kg bonus</strong> × ${fmt(s.pBonus)} = descuento <strong>${fmt(s.mBonus)}</strong><br>Total a pagar a fábrica: <strong style="font-size:15px">${fmt(totalCosto - s.mBonus)}</strong></div>
-  <h2>Distribución por cliente</h2>
-  <table><thead><tr><th>Cliente</th><th>Dirección</th><th>Productos</th><th style="text-align:right">Total venta</th><th>Pago</th></tr></thead>
-  <tbody>${s.clientData.filter(c=>c.items.length>0).map(c=>`<tr><td><strong>${c.name}</strong></td><td style="font-size:11px">${c.addr||'—'}</td><td style="font-size:11px">${c.items.map(i=>i.label+'×'+i.qty).join(', ')}</td><td style="text-align:right;font-weight:800">${fmt(c.items.reduce((a,i)=>a+i.ing,0))}</td><td style="font-size:11px">${c.pago}</td></tr>`).join('')}</tbody></table>
+  <h2>Resumen de preparación</h2>
+  <table><thead><tr><th>Producto</th><th style="text-align:center">Unidades</th><th style="text-align:center">Kg a preparar</th></tr></thead><tbody>${s.prodRows.sort((a,b)=>b.kg-a.kg).map(r=>`<tr><td>${r.label}</td><td style="text-align:center;font-weight:800">${r.uni}</td><td style="text-align:center;font-weight:800">${r.kg.toFixed(1)}</td></tr>`.join('')}</tbody><tfoot><tr style="background:#E8F4FB;font-weight:800"><td colspan="2">TOTAL GENERAL</td><td style="text-align:center">${s.totKg.toFixed(1)} kg</td></tr></tfoot></table>
   <div class="firma"><div class="fl">Firma del representante</div><div class="fl">Firma / sello fábrica</div></div>
   <script>window.onload=()=>window.print()<\/script></body></html>`;
   const a = document.createElement('a');

@@ -653,80 +653,56 @@ function bootApp() {
 }
 
 // ══ SINCRONIZAR PRECIOS DESDE SHEETS ══
-async function validarYCompletarLoginRep() {
-  const user = window._repPendingUser;
-  const pass = window._repPendingPass;
-  window._repPendingUser = null;
-  window._repPendingPass = null;
-  try {
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_REPRESENTANTES}/values/Representantes!A:F?key=${CONFIG.SHEETS_API_KEY}`;
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const data = await resp.json();
-    const rows = (data.values || []).slice(1);
-    // Cols: A=Usuario B=Nombre C=Zona D=Contraseña E=Activo
-    const rep = rows.find(r =>
-      (r[0]||'').toLowerCase() === user.toLowerCase() &&
-      (r[3]||'') === pass &&
-      (r[4]||'SI').toUpperCase() !== 'NO'
-    );
-    const errEl = document.getElementById('login-error');
-    if (!rep) {
-      if (errEl) { errEl.innerText = 'Usuario o contraseña incorrectos.'; errEl.style.display = ''; }
-      document.getElementById('screen-login').classList.add('active');
-      document.getElementById('screen-app').classList.remove('active');
-      return;
-    }
-    SESSION = { user: rep[0]||user, name: rep[1]||user, zona: rep[2]||'Sin zona', role: 'rep' };
-    localStorage.setItem('cg_session', JSON.stringify(SESSION));
-    bootApp();
-  } catch(e) {
-    console.error('validarYCompletarLoginRep error:', e);
-    toast('Error de conexión. Reintentá.');
-    document.getElementById('screen-login').classList.add('active');
-    document.getElementById('screen-app').classList.remove('active');
-  }
-}
-
 async function sincronizarPrecios() {
   const badge = document.getElementById('sync-badge');
   badge.className = 'sync-badge loading';
-  badge.innerHTML = '<i class="ti ti-refresh" style="font-size:11px"></i> Sync';
+  badge.innerHTML = '<i class="ti ti-refresh" style="font-size:11px;animation:spin 1s linear infinite"></i> Sync';
   try {
     const token = await getGoogleToken();
-    if (!token) throw new Error('Sin token');
+    if (!token) { toast('⚠ No se pudo obtener token de Google'); throw new Error('Sin token'); }
+    toast('Token OK, cargando precios...');
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_PRECIOS}/values/A2:I50`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) throw new Error('Sheets error');
+    if (!res.ok) {
+      const errTxt = await res.text();
+      toast('⚠ Sheets error ' + res.status + ': ' + errTxt.substring(0, 80));
+      throw new Error('Sheets error ' + res.status);
+    }
     const data = await res.json();
     if (data.values && data.values.length) {
-      PRODS = data.values.map(r => ({
-        id: r[0], cat: r[2], label: r[1],
-        kg: parseFloat(r[5]) || 1,
-        pventa: parseFloat(r[3]) || 0,
-        costo: parseFloat(r[4]) || 0,
-        bonus: r[6] === 'SI',
-      }));
-      toast('Precios actualizados desde Sheets ✓');
+      PRODS = data.values
+        .filter(row => row[7] !== 'NO')
+        .map(row => ({
+          id: row[0], cat: row[2], label: row[1],
+          kg: parseFloat(row[5]) || 1,
+          pventa: parseFloat(row[3]) || 0,
+          costo: parseFloat(row[4]) || 0,
+          bonus: row[6] === 'SI',
+        }));
+      toast('Precios actualizados ✓ (' + PRODS.length + ' productos)');
+    } else {
+      toast('⚠ La planilla de precios vino vacía');
     }
-    // Fetch stock desde pestaña Stock
     try {
-      const stockUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + CONFIG.SHEET_PRECIOS + '/values/' + CONFIG.SHEET_STOCK_TAB + '!A2:C100';
-      const stockRes = await fetch(stockUrl, { headers: { Authorization: 'Bearer ' + token } });
+      const stockUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_PRECIOS}/values/${CONFIG.SHEET_STOCK_TAB}!A2:C100`;
+      const stockRes = await fetch(stockUrl, { headers: { Authorization: `Bearer ${token}` } });
       if (stockRes.ok) {
         const stockData = await stockRes.json();
         _stockMap = {};
         (stockData.values || []).forEach(row => {
           if (row[0]) _stockMap[row[0].trim()] = parseFloat(row[2]) || 0;
         });
+        toast('Stock cargado ✓ (' + Object.keys(_stockMap).length + ' productos)');
         renderStockDashboard();
+      } else {
+        toast('⚠ Stock error ' + stockRes.status);
       }
-    } catch(se) { /* stock opcional */ }
+    } catch(se) { toast('⚠ Error cargando stock: ' + se.message); }
     badge.className = 'sync-badge ok';
     badge.innerHTML = '✓ Sync';
     badge.title = 'Sincronizar precios';
   } catch(e) {
-    // Siempre verde — usa precios locales igual
+    toast('⚠ Sync falló: ' + e.message);
     badge.className = 'sync-badge ok';
     badge.innerHTML = '✓ Sync';
     badge.title = 'Sin conexión — usando precios locales';

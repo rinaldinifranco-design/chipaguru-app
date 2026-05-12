@@ -336,7 +336,7 @@ body.dark footer span{color:var(--brand)}
       </div>
     </div>
     <div class="hdr-btns">
-      <button class="sync-badge ok" id="sync-badge" onclick="sincronizarPrecios()" title="Sincronizar precios"><i class="ti ti-refresh" style="font-size:12px"></i> Sync</button>
+      <button class="sync-badge ok" id="sync-badge" onclick="sincronizarPrecios(true)" title="Sincronizar con Google Sheets"><i class="ti ti-refresh" style="font-size:12px"></i> Sync</button>
       <button class="hdr-btn" id="mode-btn" onclick="toggleMode()"><i class="ti ti-moon"></i></button>
       <button class="hdr-btn" onclick="doLogout()"><i class="ti ti-logout"></i></button>
     </div>
@@ -486,7 +486,7 @@ body.dark footer span{color:var(--brand)}
       <div class="trend-wrap"><canvas id="d-trend-chart"></canvas></div>
 
       <!-- Stock actual -->
-      <div class="dash-section">📋 Stock actual <button class="sync-badge ok" style="margin-left:6px;font-size:10px;padding:2px 8px" onclick="sincronizarPrecios()"><i class="ti ti-refresh" style="font-size:10px"></i> Actualizar</button></div>
+      <div class="dash-section">📋 Stock actual <button class="sync-badge ok" style="margin-left:6px;font-size:10px;padding:2px 8px" onclick="sincronizarPrecios(true)"><i class="ti ti-refresh" style="font-size:10px"></i> Actualizar</button></div>
       <div id="d-stock-list"><div class="dash-empty">Sincronizá para ver el stock</div></div>
 
       <!-- Ranking representantes -->
@@ -614,6 +614,7 @@ function doLogin() {
       _accessToken = resp.access_token;
       _tokenExpiry = Date.now() + (parseInt(resp.expires_in, 10) - 60) * 1000;
       toast('Google conectado ✓');
+          try { localStorage.setItem('cg_authed','1'); } catch(e) {}
                     if (_pendingResolve) { _pendingResolve(_accessToken); _pendingResolve = null; return; }
                     SESSION = { user: 'google', name: 'Administrador', role: 'admin', zona: 'Todas' };
                               localStorage.setItem('cg_session', JSON.stringify(SESSION));
@@ -656,20 +657,28 @@ function bootApp() {
 }
 
 // ══ SINCRONIZAR PRECIOS DESDE SHEETS ══
-async function sincronizarPrecios() {
+async function sincronizarPrecios(showPopup = false) {
   const badge = document.getElementById('sync-badge');
   badge.className = 'sync-badge loading';
   badge.innerHTML = '<i class="ti ti-refresh" style="font-size:11px;animation:spin 1s linear infinite"></i> Sync';
   try {
-    const token = await getGoogleToken();
-    if (!token) { toast('⚠ No se pudo obtener token de Google'); throw new Error('Sin token'); }
-    toast('Token OK, cargando precios...');
+    const token = await getGoogleToken(showPopup);
+    if (!token) {
+      // Auth silenciosa falló (usuario no autorizó aún o sesión expiró)
+      badge.className = 'sync-badge ok';
+      badge.innerHTML = '<i class="ti ti-wifi-off" style="font-size:11px"></i> Sync';
+      badge.title = 'Click para conectar con Google Sheets';
+      if (!showPopup) toast('Click en Sync para conectar Google');
+      return;
+    }
+    // Guardar que ya autorizó, para que la próxima vez funcione silencioso
+    try { localStorage.setItem('cg_authed','1'); } catch(e) {}
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_PRECIOS}/values/A2:I50`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) {
       const errTxt = await res.text();
-      toast('⚠ Sheets error ' + res.status + ': ' + errTxt.substring(0, 80));
-      throw new Error('Sheets error ' + res.status);
+      toast('Sheets error ' + res.status + ': ' + errTxt.substring(0, 60));
+      throw new Error('Sheets ' + res.status);
     }
     const data = await res.json();
     if (data.values && data.values.length) {
@@ -682,9 +691,6 @@ async function sincronizarPrecios() {
           costo: parseFloat(row[4]) || 0,
           bonus: row[6] === 'SI',
         }));
-      toast('Precios actualizados ✓ (' + PRODS.length + ' productos)');
-    } else {
-      toast('⚠ La planilla de precios vino vacía');
     }
     try {
       const stockUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_PRECIOS}/values/${CONFIG.SHEET_STOCK_TAB}!A2:C100`;
@@ -695,31 +701,33 @@ async function sincronizarPrecios() {
         (stockData.values || []).forEach(row => {
           if (row[0]) _stockMap[row[0].trim()] = parseFloat(row[2]) || 0;
         });
-        toast('Stock cargado ✓ (' + Object.keys(_stockMap).length + ' productos)');
         renderStockDashboard();
-      } else {
-        toast('⚠ Stock error ' + stockRes.status);
       }
-    } catch(se) { toast('⚠ Error cargando stock: ' + se.message); }
+    } catch(se) {}
     badge.className = 'sync-badge ok';
     badge.innerHTML = '✓ Sync';
-    badge.title = 'Sincronizar precios';
+    badge.title = 'Sincronizado con Google Sheets';
+    toast('Datos actualizados ✓ (' + PRODS.length + ' productos)');
   } catch(e) {
-    toast('⚠ Sync falló: ' + e.message);
     badge.className = 'sync-badge ok';
     badge.innerHTML = '✓ Sync';
-    badge.title = 'Sin conexión — usando precios locales';
+    badge.title = 'Error al sincronizar';
+    toast('Error sync: ' + e.message);
   }
 }
 
-async function getGoogleToken() {
-    if (!_tokenClient) return null;
-    if (_accessToken && Date.now() < _tokenExpiry) return _accessToken;
-    return new Promise((resolve) => {
-          _pendingResolve = resolve;
-    const promptMode = _accessToken ? '' : 'consent';
+async function getGoogleToken(showPopup = false) {
+  if (!_tokenClient) return null;
+  if (_accessToken && Date.now() < _tokenExpiry) return _accessToken;
+  // showPopup=true: el usuario hizo click manual → mostrar popup
+  // showPopup=false: carga automática → intentar silencioso, sin molestar
+  const promptMode = showPopup ? 'consent' : '';
+  return new Promise((resolve) => {
+    // Timeout de seguridad: si el callback no llega en 20s, resolver con null
+    const t = setTimeout(() => { _pendingResolve = null; resolve(null); }, 20000);
+    _pendingResolve = (tok) => { clearTimeout(t); resolve(tok); };
     _tokenClient.requestAccessToken({ prompt: promptMode });
-    });
+  });
 }
   async function cerrarJornada() {  const s = lastState;
   const fila = [

@@ -633,7 +633,7 @@ async function validarYCompletarLoginRep() {
   // Validar: columnas A=usuario, B=contrasena, C=nombre, D=zona
   const rep = rows.find(function(r) {
     return (r[0]||'').toLowerCase().trim() === user.toLowerCase().trim()
-        && (r[1]||'').trim() === pass.trim();
+        && (r[3]||'').trim() === pass.trim();
   });
 
   if (!rep) {
@@ -643,9 +643,9 @@ async function validarYCompletarLoginRep() {
 
   SESSION = {
     user: (rep[0] || user).trim(),
-    name: (rep[2] || user).trim(),
+    name: (rep[1] || user).trim(),
     role: 'rep',
-    zona: (rep[3] || 'Sin zona').trim()
+    zona: (rep[2] || 'Sin zona').trim()
   };
   localStorage.setItem('cg_session', JSON.stringify(SESSION));
   bootApp();

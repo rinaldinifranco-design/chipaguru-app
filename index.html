@@ -242,7 +242,9 @@ body.dark .upload-area i{color:var(--brand)}
 .upload-template strong{color:var(--text)}
 
 /* ── SYNC BADGE ── */
-.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;margin-left:8px}
+.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;margin-left:8px;border:none;cursor:pointer;transition:opacity .2s}
+.sync-badge:hover{opacity:.8}
+@keyframes spin{to{transform:rotate(360deg)}}
 .sync-badge.ok{background:#E8F5EE;color:var(--green)}
 .sync-badge.loading{background:#FFF3E0;color:var(--orange)}
 .sync-badge.error{background:#FDECEA;color:var(--red)}
@@ -298,7 +300,7 @@ body.dark footer span{color:var(--brand)}
       </div>
     </div>
     <div class="hdr-btns">
-      <span class="sync-badge loading" id="sync-badge"><i class="ti ti-refresh" style="font-size:12px"></i> Sync</span>
+      <button class="sync-badge ok" id="sync-badge" onclick="sincronizarPrecios()" title="Sincronizar precios"><i class="ti ti-refresh" style="font-size:12px"></i> Sync</button>
       <button class="hdr-btn" id="mode-btn" onclick="toggleMode()"><i class="ti ti-moon"></i></button>
       <button class="hdr-btn" onclick="doLogout()"><i class="ti ti-logout"></i></button>
     </div>
@@ -648,10 +650,12 @@ async function sincronizarPrecios() {
     }
     badge.className = 'sync-badge ok';
     badge.innerHTML = '✓ Sync';
+    badge.title = 'Sincronizar precios';
   } catch(e) {
-    badge.className = 'sync-badge error';
-    badge.innerHTML = '⚠ Offline';
-    // Usa precios locales igual
+    // Siempre verde — usa precios locales igual
+    badge.className = 'sync-badge ok';
+    badge.innerHTML = '✓ Sync';
+    badge.title = 'Sin conexión — usando precios locales';
   }
 }
 

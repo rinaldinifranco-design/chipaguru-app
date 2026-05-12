@@ -975,7 +975,9 @@ function showTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-' + tab).classList.add('active');
-  document.getElementById('tab-' + tab).classList.add('active');
+  // Fix: el tab de dashboard tiene id 'tab-dashboard-wrap', no 'tab-dashboard'
+  const navEl = document.getElementById('tab-' + tab) || document.getElementById('tab-' + tab + '-wrap');
+  if (navEl) navEl.classList.add('active');
   if (tab === 'dashboard') { cargarDashboard(); renderStockDashboard(); }
   if (tab === 'exportar') cargarHistorial();
 }

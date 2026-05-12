@@ -835,7 +835,7 @@ async function getGoogleToken(showPopup = false) {
     FREQ_CLIENTS = FREQ_CLIENTS.slice(0, 50);
     localStorage.setItem('cg_freq', JSON.stringify(FREQ_CLIENTS));
     cargarFrecuentes();
-    toast('Jornada guardada en Sheets ✓');
+    toast('Jornada guardada en Sheets ✓'); const localOk=JSON.parse(localStorage.getItem('cg_historial')||'[]'); localOk.unshift({...lastState,fecha:s.fecha,rep:SESSION.name,enviada:true}); localStorage.setItem('cg_historial',JSON.stringify(localOk.slice(0,30)));
   } catch(e) {
     // Guardar localmente si no hay conexión
     const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
@@ -941,7 +941,7 @@ function confirmarEliminarJornada(idx) {
   });
 }
 
-function confirmarCerrarJornada(idx) {
+function confirmarCerrarJornada(idx) { const _loc=JSON.parse(localStorage.getItem('cg_historial')||'[]'); if(_loc[idx]?.enviada){toast('Jornada ya enviada a Sheets ✓');return;}
   const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
   const s = local[idx];
   if (!s) return;

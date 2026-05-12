@@ -780,7 +780,13 @@ async function sincronizarPrecios(showPopup = false) {
 }
 
 async function getGoogleToken(showPopup = false) {
-  if (!_tokenClient) return null;
+  if (!_tokenClient) {
+    if (showPopup) initGoogleAuth();
+    if (!_tokenClient) {
+      if (showPopup) toast('Google no está listo. Recargá la página e intentá de nuevo.');
+      return null;
+    }
+  }
   if (_accessToken && Date.now() < _tokenExpiry) return _accessToken;
   // showPopup=true: el usuario hizo click manual → mostrar popup
   // showPopup=false: carga automática → intentar silencioso, sin molestar
@@ -813,7 +819,7 @@ async function getGoogleToken(showPopup = false) {
   ];
   try {
     const token = await getGoogleToken(true);
-    if (!token) throw new Error('Sin token');
+    if (!token) { toast('⚠ Autorizá con Google para guardar. Tocá el ícono 🔁 o cerrá y reingresá.'); return; }
     await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:A:append?valueInputOption=USER_ENTERED`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -964,7 +970,7 @@ async function enviarJornadaASheets(idx) {
   ];
   try {
     const token = await getGoogleToken(true);
-    if (!token) throw new Error('Sin token');
+    if (!token) { toast('⚠ Autorizá con Google para enviar. Tocá el ícono 🔁 o cerrá y reingresá.'); return; }
     const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets/' + CONFIG.SHEET_HISTORIAL + '/values/A:A:append?valueInputOption=USER_ENTERED', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },

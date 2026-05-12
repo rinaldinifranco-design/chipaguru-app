@@ -136,6 +136,10 @@ body.dark .del-cli-btn{background:var(--bg3);border-color:var(--border);color:va
 .client-body{padding:.5rem .9rem .4rem;background:var(--card)}
 .item-row{display:grid;grid-template-columns:1fr 64px 30px;gap:6px;align-items:center;margin-bottom:5px}
 .item-row select{background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);padding:5px 7px;font-size:12px;width:100%;font-family:'Nunito',sans-serif;font-weight:700}
+.item-row select.stock-ok{border-color:var(--green)}
+.item-row select.stock-low{border-color:var(--orange)}
+.item-row select.stock-none{border-color:var(--red);opacity:.7}
+.stock-hint{font-size:10px;font-weight:800;margin-top:-3px;padding-left:2px;grid-column:1}
 .item-row input[type=number]{background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);padding:5px 6px;font-size:13px;width:100%;font-family:'Nunito',sans-serif;font-weight:700;text-align:center}
 .del-item-btn{background:var(--bg2);border:1.5px solid var(--border);color:var(--red);border-radius:8px;padding:5px 7px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .del-item-btn:hover{background:var(--red);color:var(--white)}
@@ -479,6 +483,10 @@ body.dark footer span{color:var(--brand)}
       <div class="dash-section">📈 Ganancia neta en el tiempo</div>
       <div class="trend-wrap"><canvas id="d-trend-chart"></canvas></div>
 
+      <!-- Stock actual -->
+      <div class="dash-section">📋 Stock actual <button class="sync-badge ok" style="margin-left:6px;font-size:10px;padding:2px 8px" onclick="sincronizarPrecios()"><i class="ti ti-refresh" style="font-size:10px"></i> Actualizar</button></div>
+      <div id="d-stock-list"><div class="dash-empty">Sincronizá para ver el stock</div></div>
+
       <!-- Ranking representantes -->
       <div class="dash-section">🏆 Ranking representantes</div>
       <div id="d-rep-list"><div class="dash-empty">Cerrá jornadas para ver el ranking</div></div>
@@ -498,6 +506,9 @@ const CONFIG = {
   SHEET_CLIENTES:     '1NCQOEdyUgG5sOPWHUe-zXxUegefF_1fFb8aVqxY4MtY',
   SHEET_HISTORIAL:    '1CSCbiDfPUV7vXpeHyomBraGkCTEGSk2tFDaKtd1Trjk',
   SHEET_REPRESENTANTES: '1Dh8qZxakXSaJwgbXYJjBZ-s2NgqT0YpF1tivvN47WPU',
+  // Pestaña 'Stock' en el mismo Google Sheet que SHEET_PRECIOS
+  // Columnas: A=id_producto, B=nombre, C=cantidad_disponible
+  SHEET_STOCK_TAB: 'Stock',
   // Reemplazá con tu Client ID de Google OAuth
   // (ver instrucciones en README al final del archivo)
   SHEETS_API_KEY: 'AIzaSyASea2_EaAyQF4ur8FrrkaIsJN59oc4mU8',
@@ -543,6 +554,7 @@ let darkMode = localStorage.getItem('cg_dark') === '1';
 let clientSeq = 0, itemSeq = 0, remitoSeq = 0;
 const clients = [];
 let lastState = {};
+let _stockMap = {}; // { productId: cantidadDisponible }
 let FREQ_CLIENTS = JSON.parse(localStorage.getItem('cg_freq') || '[]');
 
 // ══ INIT ══
@@ -690,6 +702,19 @@ async function sincronizarPrecios() {
       }));
       toast('Precios actualizados desde Sheets ✓');
     }
+    // Fetch stock desde pestaña Stock
+    try {
+      const stockUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + CONFIG.SHEET_PRECIOS + '/values/' + CONFIG.SHEET_STOCK_TAB + '!A2:C100';
+      const stockRes = await fetch(stockUrl, { headers: { Authorization: 'Bearer ' + token } });
+      if (stockRes.ok) {
+        const stockData = await stockRes.json();
+        _stockMap = {};
+        (stockData.values || []).forEach(row => {
+          if (row[0]) _stockMap[row[0].trim()] = parseFloat(row[2]) || 0;
+        });
+        renderStockDashboard();
+      }
+    } catch(se) { /* stock opcional */ }
     badge.className = 'sync-badge ok';
     badge.innerHTML = '✓ Sync';
     badge.title = 'Sincronizar precios';
@@ -964,7 +989,7 @@ function showTab(tab) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-' + tab).classList.add('active');
   document.getElementById('tab-' + tab).classList.add('active');
-  if (tab === 'dashboard') cargarDashboard();
+  if (tab === 'dashboard') { cargarDashboard(); renderStockDashboard(); }
   if (tab === 'exportar') cargarHistorial();
 }
 
@@ -992,8 +1017,26 @@ function optsHtml() {
   const cats = {};
   PRODS.forEach(p => { if (!cats[p.cat]) cats[p.cat] = []; cats[p.cat].push(p); });
   return Object.entries(cats).map(([cat, ps]) =>
-    `<optgroup label="${cat}">${ps.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}</optgroup>`
+    '<optgroup label="' + cat + '">' + ps.map(p => {
+      const hasStock = Object.keys(_stockMap).length > 0;
+      const qty = _stockMap[p.id];
+      let stockTxt = '';
+      if (hasStock) {
+        if (qty === 0) stockTxt = ' — ✗ Sin stock';
+        else if (qty !== undefined && qty <= 5) stockTxt = ' — ⚠ (' + qty + ' disp.)';
+        else if (qty !== undefined) stockTxt = ' — ✓ (' + qty + ' disp.)';
+      }
+      const dis = (hasStock && qty === 0) ? 'disabled' : '';
+      return '<option value="' + p.id + '" ' + dis + '>' + p.label + stockTxt + '<\/option>';
+    }).join('') + '<\/optgroup>'
   ).join('');
+}
+
+function stockClass(qty) {
+  if (qty === undefined || qty === null) return '';
+  if (qty === 0) return 'stock-none';
+  if (qty <= 5) return 'stock-low';
+  return 'stock-ok';
 }
 
 function calcBonus(kgC, pFab) {
@@ -1158,6 +1201,17 @@ function recalc() {
 
   lastState = { fecha: fmtDate(), kmTotal, costoNafta, CKM, kgClasico, cant, pBonus, mBonus, totV, bruta, neta, netoKg, nCli, totKg, clientData, prodRows: Object.values(pMap) };
 
+  // Colorear selects según stock
+  if (Object.keys(_stockMap).length > 0) {
+    clients.forEach(c => c.items.forEach(iid => {
+      const sel = document.getElementById('prod-' + iid);
+      if (!sel) return;
+      sel.classList.remove('stock-ok', 'stock-low', 'stock-none');
+      const cls = stockClass(_stockMap[sel.value]);
+      if (cls) sel.classList.add(cls);
+    }));
+  }
+
   document.getElementById('metrics').innerHTML = `
     <div class="m"><div class="ml">Clientes</div><div class="mv y">${nCli}</div></div>
     <div class="m"><div class="ml">Km</div><div class="mv w">${Math.round(kmTotal)}</div></div>
@@ -1214,6 +1268,34 @@ function parseProdString(str) {
     if (m) result[m[1].trim()] = (result[m[1].trim()] || 0) + parseFloat(m[2]);
   });
   return result;
+}
+
+function renderStockDashboard() {
+  const el = document.getElementById('d-stock-list');
+  if (!el) return;
+  const entries = Object.entries(_stockMap);
+  if (!entries.length) {
+    el.innerHTML = '<div class="dash-empty">Sin datos — creá la pestaña "Stock" en el Sheet de precios con columnas: A=id, B=nombre, C=cantidad<\/div>';
+    return;
+  }
+  entries.sort((a, b) => a[1] - b[1]);
+  const maxQty = Math.max(...entries.map(e => e[1]), 1);
+  el.innerHTML = entries.map(([id, qty]) => {
+    const prod = PRODS.find(p => p.id === id);
+    const label = prod ? prod.label : id;
+    const pct = Math.round((qty / maxQty) * 100);
+    const color = qty === 0 ? 'var(--red)' : qty <= 5 ? 'var(--orange)' : 'var(--green)';
+    const badge = qty === 0 ? '✗ Sin stock' : qty <= 5 ? '⚠ ' + qty + ' disp.' : '✓ ' + qty + ' disp.';
+    return '<div style="margin-bottom:8px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">' +
+        '<span style="font-size:12px;font-weight:700">' + label + '<\/span>' +
+        '<span style="font-size:11px;font-weight:800;color:' + color + '">' + badge + '<\/span>' +
+      '<\/div>' +
+      '<div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:4px;transition:width .4s"><\/div>' +
+      '<\/div>' +
+    '<\/div>';
+  }).join('');
 }
 
 function renderFabChart(labels, values) {

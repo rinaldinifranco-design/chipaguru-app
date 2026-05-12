@@ -599,6 +599,7 @@ function doLogin() {
   // Se llama automáticamente cuando carga el script de GIS
   function initGoogleAuth() {
       if (!CONFIG.GOOGLE_CLIENT_ID || CONFIG.GOOGLE_CLIENT_ID.includes('TU_CLIENT_ID')) return;
+  if (typeof google === 'undefined' || !google.accounts) return;
       _tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: CONFIG.GOOGLE_CLIENT_ID,
             scope: 'https://www.googleapis.com/auth/spreadsheets',
@@ -617,6 +618,10 @@ function doLogin() {
             }
       });
   }
+// Fallback: si Google cargó antes que el script de la app, lo inicializamos acá
+if (typeof google !== 'undefined' && google.accounts && !_tokenClient) {
+  initGoogleAuth();
+}
 
   function loginGoogle() {
   if (!CONFIG.GOOGLE_CLIENT_ID || CONFIG.GOOGLE_CLIENT_ID.includes('TU_CLIENT_ID')) {

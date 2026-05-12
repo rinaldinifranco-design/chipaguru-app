@@ -1268,10 +1268,21 @@ function filterByPeriod(rows) {
 function parseProdString(str) {
   const result = {};
   if (!str) return result;
-  str.split('|').forEach(part => {
-    const m = part.trim().match(/^(.+):(\d+\.?\d*)kg$/);
-    if (m) result[m[1].trim()] = (result[m[1].trim()] || 0) + parseFloat(m[2]);
+  const sep = str.includes(' | ') ? ' | ' : (str.includes('|') ? '|' : ',');
+  str.split(sep).forEach(function(part) {
+    part = part.trim();
+    const m = part.match(/^(.+):(\d+\.?\d*)kg$/i);
+    if (m) {
+      let label = m[1].trim();
+      if (window.PRODS) {
+        const p = window.PRODS.find(function(x){ return x.id === label; });
+        if (p) label = p.label;
+      }
+      result[label] = (result[label] || 0) + parseFloat(m[2]);
+    }
   });
+  return result;
+});
   return result;
 }
 
@@ -1447,26 +1458,32 @@ async function cargarDashboard() {
   // Historial de salidas: tabla con últimas 15 salidas ordenadas por fecha
   const salidasEl = document.getElementById('d-salidas-list');
   if (salidasEl) {
-    const recent = [...rows].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).slice(0,15);
-    salidasEl.innerHTML = recent.length ? `<div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:4px">
-        <thead><tr style="background:var(--brand-dark);color:#fff">
-          <th style="padding:6px 8px;text-align:left;font-weight:700">Fecha</th>
-          <th style="padding:6px 8px;text-align:left;font-weight:700">Rep</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700">Kg</th>
-          <th style="padding:6px 8px;text-align:right;font-weight:700">Neta</th>
-          <th style="padding:6px 8px;text-align:left;font-weight:700">Productos</th>
-        </tr></thead>
-        <tbody>${recent.map((s,i)=>`
-          <tr style="background:${i%2===0?'var(--bg2)':'var(--card)'};border-bottom:1px solid var(--border)">
-            <td style="padding:5px 8px;white-space:nowrap">${s.fecha||'—'}</td>
-            <td style="padding:5px 8px">${s.rep||'—'}</td>
-            <td style="padding:5px 8px;text-align:right;font-weight:700">${s.totKg.toFixed(1)} kg</td>
-            <td style="padding:5px 8px;text-align:right;font-weight:700;color:var(--green)">$${Math.round(s.neta).toLocaleString('es-AR')}</td>
-            <td style="padding:5px 8px;font-size:11px;color:var(--text2)">${s.prods||'—'}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table></div>` : '<div class="dash-empty">Sin datos en el período</div>';
+    const recent = rows.slice().sort(function(a,b){ return (b.fecha||'').localeCompare(a.fecha||''); }).slice(0,15);
+    if (!recent.length) {
+      salidasEl.innerHTML = '<div class="dash-empty">Sin datos en el período</div>';
+    } else {
+      let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:4px">';
+      html += '<thead><tr style="background:var(--brand-dark);color:#fff">';
+      html += '<th style="padding:6px 8px;text-align:left">Fecha</th>';
+      html += '<th style="padding:6px 8px;text-align:left">Rep</th>';
+      html += '<th style="padding:6px 8px;text-align:right">Kg</th>';
+      html += '<th style="padding:6px 8px;text-align:right">Neta</th>';
+      html += '<th style="padding:6px 8px;text-align:left">Productos</th>';
+      html += '</tr></thead><tbody>';
+      for (let i = 0; i < recent.length; i++) {
+        const s = recent[i];
+        const bg = i % 2 === 0 ? 'var(--bg2)' : 'var(--card)';
+        html += '<tr style="background:' + bg + ';border-bottom:1px solid var(--border)">';
+        html += '<td style="padding:5px 8px;white-space:nowrap">' + (s.fecha || '—') + '</td>';
+        html += '<td style="padding:5px 8px">' + (s.rep || '—') + '</td>';
+        html += '<td style="padding:5px 8px;text-align:right;font-weight:700">' + (s.totKg || 0).toFixed(1) + ' kg</td>';
+        html += '<td style="padding:5px 8px;text-align:right;font-weight:700;color:var(--green)">$' + Math.round(s.neta || 0).toLocaleString('es-AR') + '</td>';
+        html += '<td style="padding:5px 8px;font-size:11px;color:var(--text2)">' + (s.prods || '—') + '</td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table></div>';
+      salidasEl.innerHTML = html;
+    }
   }
 }
 // ══ GENERAR REMITOS ══

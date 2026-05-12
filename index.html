@@ -15,6 +15,8 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
   <!-- Google Identity Services — OAuth 2.0 para Sheets API -->
+    <!-- Stub: define initGoogleAuth antes de que GIS cargue para evitar race condition -->
+    <script>function initGoogleAuth(){window._googleLibReady=true;}</script>
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleAuth()"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -621,8 +623,9 @@ function doLogin() {
       });
   }
 // Fallback: si Google cargó antes que el script de la app, lo inicializamos acá
-if (typeof google !== 'undefined' && google.accounts && !_tokenClient) {
-  initGoogleAuth();
+// Llamar initGoogleAuth si GIS ya cargó (por flag del stub o por google disponible)
+if (window._googleLibReady || (typeof google !== 'undefined' && google.accounts)) {
+  if (!_tokenClient) initGoogleAuth();
 }
 
   function loginGoogle() {

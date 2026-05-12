@@ -373,7 +373,7 @@ body.dark footer span{color:var(--brand)}
         </button>
         <button class="exp-btn" onclick="cerrarJornada()">
           <i class="ti ti-cloud-upload"></i>
-          <div><span>Cerrar jornada</span><small>Guardar en Sheets</small></div>
+          <div><span>Cerrar jornada</span><small>Guardar historial</small></div>
         </button>
       </div>
 
@@ -693,14 +693,44 @@ function cargarHistorial() {
   const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
   const el = document.getElementById('historial-list');
   if (!local.length) return;
-  el.innerHTML = local.map(s => `
+  el.innerHTML = local.map((s, i) => `
     <div class="ranking-row">
       <div style="flex:1"><strong style="font-size:13px">${s.fecha}</strong><br>
-      <span style="font-size:11px;color:var(--text3)">${s.nCli} clientes · ${s.totKg?.toFixed(1)} kg · ${Math.round(s.kmTotal)} km</span></div>
-      <span style="font-family:'Nunito',sans-serif;font-weight:900;color:${s.neta>=0?'var(--green)':'var(--red)'};font-size:.95rem">${fmt(s.neta)}</span>
+      <span style="font-size:11px;color:var(--text3)">${s.nCli} clientes · ${(s.totKg||0).toFixed(1)} kg · ${Math.round(s.kmTotal||0)} km</span></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span style="font-family:'Nunito',sans-serif;font-weight:900;color:${(s.neta||0)>=0?'var(--green)':'var(--red)'};font-size:.95rem">${fmt(s.neta||0)}</span>
+        <button class="add-item-btn" style="font-size:11px;padding:4px 10px;white-space:nowrap" onclick="editarJornada(${i})"><i class="ti ti-pencil"></i> Editar</button>
+      </div>
     </div>`).join('');
 }
 
+// ══ EDITAR JORNADA GUARDADA ══
+function editarJornada(idx) {
+  const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
+  const s = local[idx];
+  if (!s) return;
+
+  // Limpiar ruta actual
+  [...clients].forEach(c => removeClient(c.id));
+
+  // Restaurar km
+  const kmEl = document.getElementById('km-total');
+  if (kmEl && s.kmTotal) kmEl.value = Math.round(s.kmTotal);
+
+  // Restaurar clientes con sus productos
+  const clientsToLoad = (s.clientData || []).filter(c => c.items && c.items.length > 0);
+  clientsToLoad.forEach(c => {
+    addClient({
+      name: c.name,
+      addr: c.addr,
+      pago: c.pago,
+      items: c.items.map(it => ({ id: it.prodId || it.id, qty: it.qty || 1 }))
+    });
+  });
+
+  showTab('ruta');
+  toast(`Jornada ${s.fecha} cargada — editá y volvé a cerrar cuando esté lista`);
+}
 // ══ CARGA MASIVA DESDE EXCEL ══
 function procesarArchivo(input) {
   const file = input.files[0];
@@ -918,7 +948,7 @@ function recalc() {
       if (!p) return;
       const ing = p.pventa * q, cos = p.costo * q, kgV = p.kg * q, gain = ing - cos;
       cG += gain; cK += kgV; cC += cos; totV += gain; totC += cos; totKg += kgV;
-      items.push({ label: p.label, qty: q, ing, cos, kgV, gain, bonus: p.bonus, pventa: p.pventa });
+      items.push({ prodId: p.id, label: p.label, qty: q, ing, cos, kgV, gain, bonus: p.bonus, pventa: p.pventa });
       dRows.push(`<div class="drow"><div class="dprod">${p.label} × ${q}<span class="dtag">${p.bonus ? 'aplica bonus ✓' : 'sin bonus'}</span></div><div class="dnum">${fmt(ing)}</div><div class="dnum">${fmt(cos)}</div><div class="${gain >= 0 ? 'dpos' : 'dneg'}">${fmt(gain)}</div></div>`);
       if (!pMap[p.id]) pMap[p.id] = { id: p.id, cat: p.cat, label: p.label, pventa: p.pventa, costo: p.costo, ing: 0, cos: 0, gan: 0, uni: 0, kg: 0 };
       pMap[p.id].ing += ing; pMap[p.id].cos += cos; pMap[p.id].gan += gain; pMap[p.id].uni += q; pMap[p.id].kg += kgV;

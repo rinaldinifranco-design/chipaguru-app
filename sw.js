@@ -1,4 +1,4 @@
-const CACHE = 'chipaguru-v3';
+const CACHE = 'chipaguru-v4';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {

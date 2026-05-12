@@ -201,6 +201,27 @@ body.dark .b-g{background:#0F2A1A}.body.dark .b-a{background:#2A1A08}.body.dark 
 /* ── DASHBOARD ── */
 .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1rem}
 .dash-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:.9rem 1rem}
+.dash-period{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.dash-period button{flex:1;min-width:70px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--card);color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;transition:.15s}
+.dash-period button.active{background:var(--brand);border-color:var(--brand);color:#fff}
+.dash-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:800;margin-bottom:4px}
+.dash-val{font-size:1.4rem;font-weight:900;font-family:'Nunito',sans-serif}
+.dash-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.dash-section{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin:1.2rem 0 .6rem;padding-bottom:.35rem;border-bottom:1.5px solid var(--border)}
+.fab-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.fab-row:last-child{border-bottom:none}
+.fab-name{flex:1;font-size:13px;font-weight:700}
+.fab-kg{font-size:13px;font-weight:900;font-family:'Nunito',sans-serif;color:var(--brand-darker);min-width:55px;text-align:right}
+.fab-bar-wrap{width:90px;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.fab-bar{height:100%;background:var(--brand);border-radius:4px;transition:width .4s}
+.rep-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.rep-row:last-child{border-bottom:none}
+.rep-pos{width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rep-info{flex:1;font-size:13px}
+.rep-info small{font-size:10px;color:var(--text3);display:block}
+.rep-neta{font-size:13px;font-weight:900;font-family:'Nunito',sans-serif}
+.trend-wrap{width:100%;height:120px;position:relative;margin-top:.5rem}
+.dash-empty{text-align:center;padding:2rem;color:var(--text3);font-size:13px}
 .dash-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin-bottom:4px}
 .dash-val{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.4rem;color:var(--text)}
 .dash-sub{font-size:10px;color:var(--text3);margin-top:2px}
@@ -388,15 +409,35 @@ body.dark footer span{color:var(--brand)}
 
     <!-- ── TAB: DASHBOARD (solo admin) ── -->
     <div class="tab-panel" id="panel-dashboard">
-      <div class="sec">Rendimiento general <span class="sync-badge ok" id="dash-sync">En vivo</span></div>
-      <div class="dash-grid" id="dash-metrics">
-        <div class="dash-card"><div class="dash-label">Representantes activos</div><div class="dash-val" id="d-reps">—</div></div>
-        <div class="dash-card"><div class="dash-label">Salidas este mes</div><div class="dash-val" id="d-salidas">—</div></div>
-        <div class="dash-card"><div class="dash-label">Kg vendidos mes</div><div class="dash-val" id="d-kg">—</div></div>
-        <div class="dash-card"><div class="dash-label">Ganancia neta mes</div><div class="dash-val" id="d-ganancia" style="color:var(--green)">—</div></div>
+      <div class="sec">Dashboard admin <span class="sync-badge ok" id="dash-sync">Local</span></div>
+
+      <!-- Filtro de período -->
+      <div class="dash-period">
+        <button id="dp-week" onclick="setDashPeriod('week')">Semana</button>
+        <button id="dp-month" onclick="setDashPeriod('month')" class="active">Este mes</button>
+        <button id="dp-all" onclick="setDashPeriod('all')">Todo</button>
       </div>
-      <div class="sec">Ranking por representante</div>
-      <div id="ranking-list"><div style="text-align:center;padding:2rem;color:var(--text3);font-size:13px">Cargando datos...</div></div>
+
+      <!-- KPIs resumen -->
+      <div class="dash-grid" id="dash-metrics">
+        <div class="dash-card"><div class="dash-label">Salidas</div><div class="dash-val" id="d-salidas">—</div><div class="dash-sub" id="d-salidas-sub"></div></div>
+        <div class="dash-card"><div class="dash-label">Kg vendidos</div><div class="dash-val" id="d-kg">—</div><div class="dash-sub" id="d-kg-sub"></div></div>
+        <div class="dash-card"><div class="dash-label">Reps activos</div><div class="dash-val" id="d-reps">—</div></div>
+        <div class="dash-card"><div class="dash-label">Ganancia neta</div><div class="dash-val" id="d-ganancia" style="color:var(--green)">—</div><div class="dash-sub" id="d-gan-sub"></div></div>
+      </div>
+
+      <!-- Producción fábrica -->
+      <div class="dash-section">📦 Producción para fábrica</div>
+      <div id="d-fab-list"><div class="dash-empty">Sin datos en el período</div></div>
+      <div class="trend-wrap" style="margin-top:.8rem"><canvas id="d-fab-chart"></canvas></div>
+
+      <!-- Tendencia en el tiempo -->
+      <div class="dash-section">📈 Ganancia neta en el tiempo</div>
+      <div class="trend-wrap"><canvas id="d-trend-chart"></canvas></div>
+
+      <!-- Ranking representantes -->
+      <div class="dash-section">🏆 Ranking representantes</div>
+      <div id="d-rep-list"><div class="dash-empty">Cerrá jornadas para ver el ranking</div></div>
     </div>
 
   </div>
@@ -770,6 +811,8 @@ function descargarPlantilla() {
 
 // ══ UI HELPERS ══
 function showTab(tab) {
+  // Bloqueo duro: dashboard solo para admin
+  if (tab === 'dashboard' && SESSION?.role !== 'admin') { toast('Acceso restringido al administrador'); return; }
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-' + tab).classList.add('active');
@@ -989,103 +1032,184 @@ function recalc() {
 }
 
 // ══ DASHBOARD (admin) ══
-async function cargarDashboard() {
-  const sess = JSON.parse(localStorage.getItem('cg_session') || '{}');
+let _dashPeriod = 'month';
+let _fabChart = null, _trendChart = null;
 
-  // Mostrar/ocultar sección admin según rol
-  const adminSection = document.getElementById('dash-admin-section');
-  if (adminSection) adminSection.style.display = sess.role === 'admin' ? '' : 'none';
-
-  // Métricas vacías mientras carga
-  ['d-reps','d-salidas','d-kg','d-ganancia'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerText = '...';
-  });
-
-  try {
-    const token = await getGoogleToken();
-
-    // ── Para admin: leer Historial y mostrar datos por representante ──
-    if (sess.role === 'admin') {
-      const sheetId = CONFIG.SHEET_HISTORIAL;
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Historial!A:O?access_token=${token}`;
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const data = await resp.json();
-      const rows = (data.values || []).slice(1).filter(r => r[3]);
-
-      // Agrupar por nombre de representante (col 3)
-      const repStats = {};
-      rows.forEach(row => {
-        const rep  = row[3] || '?';
-        const zona = row[4] || '';
-        const kg   = parseFloat(row[7]) || 0;
-        const venta = parseFloat(String(row[11] || '0').replace(/[^0-9.-]/g,'')) || 0;
-        const neta  = parseFloat(String(row[13] || '0').replace(/[^0-9.-]/g,'')) || 0;
-        if (!repStats[rep]) repStats[rep] = { zona, salidas: 0, kg: 0, venta: 0, neta: 0 };
-        repStats[rep].salidas++;
-        repStats[rep].kg    += kg;
-        repStats[rep].venta += venta;
-        repStats[rep].neta  += neta;
-      });
-
-      const repsArr   = Object.entries(repStats).sort((a,b) => b[1].kg - a[1].kg);
-      const totalKg   = repsArr.reduce((s,[,r]) => s + r.kg, 0);
-      const totalNeta = repsArr.reduce((s,[,r]) => s + r.neta, 0);
-
-      const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
-      setEl('d-reps',    repsArr.length  || '—');
-      setEl('d-salidas', rows.length     || '—');
-      setEl('d-kg',      totalKg > 0 ? totalKg.toFixed(1) + ' kg' : '—');
-      setEl('d-ganancia', totalNeta > 0 ? '$' + Math.round(totalNeta).toLocaleString('es-AR') : '—');
-
-      const rankEl = document.getElementById('ranking-list');
-      if (rankEl) {
-        rankEl.innerHTML = repsArr.length === 0
-          ? '<div style="text-align:center;color:#999;padding:20px;font-size:13px">Sin datos aún. Los registros aparecen después de cerrar una jornada.</div>'
-          : repsArr.map(([rep, s], i) => `
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0e0c0">
-                <div>
-                  <span style="font-weight:600;color:#5B3A29">${i+1}. ${rep}</span>
-                  <span style="color:#aaa;font-size:12px;margin-left:8px">${s.zona}</span>
-                </div>
-                <div style="text-align:right;font-size:13px;color:#555">
-                  <b>${s.salidas}</b> salidas &nbsp;·&nbsp;
-                  <b>${s.kg.toFixed(1)}</b> kg &nbsp;·&nbsp;
-                  <b>$${Math.round(s.venta).toLocaleString('es-AR')}</b>
-                </div>
-              </div>
-            `).join('');
-      }
-    }
-
-    // ── Para rep: mostrar solo sus propias métricas del historial ──
-    if (sess.role === 'rep') {
-      const sheetId = CONFIG.SHEET_HISTORIAL;
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Historial!A:O?access_token=${token}`;
-      const resp = await fetch(url);
-      const data = await resp.json();
-      const rows = (data.values || []).slice(1).filter(r => r[3] === sess.name);
-
-      const totalKg = rows.reduce((s,r) => s + (parseFloat(r[7])||0), 0);
-      const totalV  = rows.reduce((s,r) => s + (parseFloat(String(r[11]||'0').replace(/[^0-9.-]/g,''))||0), 0);
-
-      const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
-      setEl('d-salidas', rows.length   || '—');
-      setEl('d-kg',      totalKg > 0 ? totalKg.toFixed(1) + ' kg' : '—');
-      setEl('d-ganancia', totalV > 0  ? '$' + Math.round(totalV).toLocaleString('es-AR') : '—');
-    }
-
-    const syncEl = document.getElementById('dash-sync');
-    if (syncEl) syncEl.innerText = new Date().toLocaleTimeString('es-AR');
-
-  } catch(e) {
-    console.error('Dashboard error:', e);
-    const rankEl = document.getElementById('ranking-list');
-    if (rankEl) rankEl.innerHTML = '<div style="color:#c00;padding:10px;font-size:13px">Error cargando datos: ' + e.message + '</div>';
-  }
+function setDashPeriod(p) {
+  _dashPeriod = p;
+  ['week','month','all'].forEach(x => document.getElementById('dp-'+x).classList.toggle('active', x === p));
+  cargarDashboard();
 }
 
+function filterByPeriod(rows) {
+  const now = new Date();
+  return rows.filter(s => {
+    if (!s.fecha) return false;
+    const parts = s.fecha.split('/');
+    if (parts.length < 3) return false;
+    const d = new Date(+parts[2], +parts[1]-1, +parts[0]);
+    if (_dashPeriod === 'week') {
+      const week = new Date(now); week.setDate(now.getDate() - 7);
+      return d >= week;
+    }
+    if (_dashPeriod === 'month') {
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }
+    return true;
+  });
+}
+
+function parseProdString(str) {
+  const result = {};
+  if (!str) return result;
+  str.split('|').forEach(part => {
+    const m = part.trim().match(/^(.+):(\d+\.?\d*)kg$/);
+    if (m) result[m[1].trim()] = (result[m[1].trim()] || 0) + parseFloat(m[2]);
+  });
+  return result;
+}
+
+function renderFabChart(labels, values) {
+  const ctx = document.getElementById('d-fab-chart');
+  if (!ctx) return;
+  if (_fabChart) { _fabChart.destroy(); _fabChart = null; }
+  if (!labels.length) { ctx.style.display='none'; return; }
+  ctx.style.display = '';
+  const colors = ['#F0C97E','#A07830','#D4A84B','#C0392B','#2D8A5E','#5B4FCF','#E67E22'];
+  _fabChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: labels.map((_,i) => colors[i % colors.length]), borderRadius: 6, borderSkipped: false }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 30 }, grid: { display: false } },
+        y: { ticks: { font: { size: 10 }, callback: v => v + ' kg' }, grid: { color: 'rgba(0,0,0,.05)' } }
+      }
+    }
+  });
+}
+
+function renderTrendChart(rows) {
+  const ctx = document.getElementById('d-trend-chart');
+  if (!ctx) return;
+  if (_trendChart) { _trendChart.destroy(); _trendChart = null; }
+  if (!rows.length) { ctx.style.display='none'; return; }
+  ctx.style.display = '';
+  const byDate = {};
+  rows.forEach(s => { byDate[s.fecha] = (byDate[s.fecha] || 0) + (parseFloat(s.neta) || 0); });
+  const sorted = Object.entries(byDate).sort((a,b) => {
+    const pa = a[0].split('/'), pb = b[0].split('/');
+    return new Date(+pa[2],+pa[1]-1,+pa[0]) - new Date(+pb[2],+pb[1]-1,+pb[0]);
+  });
+  _trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: sorted.map(e => e[0]),
+      datasets: [{
+        data: sorted.map(e => Math.round(e[1])),
+        borderColor: '#F0C97E', backgroundColor: 'rgba(240,201,126,.15)',
+        tension: 0.35, fill: true, pointRadius: 4, pointBackgroundColor: '#A07830'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 30 }, grid: { display: false } },
+        y: { ticks: { font: { size: 10 }, callback: v => '$' + (v/1000).toFixed(0)+'k' }, grid: { color: 'rgba(0,0,0,.05)' } }
+      }
+    }
+  });
+}
+
+async function cargarDashboard() {
+  if (SESSION?.role !== 'admin') return;
+
+  let allRows = [];
+  try {
+    const token = await getGoogleToken();
+    if (token) {
+      const resp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:O`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await resp.json();
+      const sheetRows = (data.values || []).slice(1);
+      allRows = sheetRows.map(r => ({
+        id: r[0], fecha: r[1], rep: r[3], zona: r[4],
+        km: parseFloat(r[5]) || 0, nCli: parseInt(r[6]) || 0,
+        totKg: parseFloat(r[7]) || 0, neta: parseFloat(r[13]) || 0,
+        prods: r[14] || ''
+      }));
+      document.getElementById('dash-sync').textContent = 'Sheets ✓';
+      document.getElementById('dash-sync').className = 'sync-badge ok';
+    }
+  } catch(e) {}
+
+  if (!allRows.length) {
+    const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
+    allRows = local.map(s => ({
+      fecha: s.fecha, rep: s.rep || SESSION.name, zona: s.zona || '—',
+      totKg: parseFloat(s.totKg) || 0, neta: parseFloat(s.neta) || 0,
+      prods: (s.prodRows || []).map(r => r.label + ':' + (r.kg||0).toFixed(1) + 'kg').join(' | ')
+    }));
+    document.getElementById('dash-sync').textContent = 'Local';
+    document.getElementById('dash-sync').className = 'sync-badge';
+  }
+
+  const rows = filterByPeriod(allRows);
+  const totalKg   = rows.reduce((a,s) => a + s.totKg, 0);
+  const totalNeta = rows.reduce((a,s) => a + s.neta,  0);
+  const repsSet   = new Set(rows.map(s => s.rep).filter(Boolean));
+  const periodLabel = _dashPeriod === 'week' ? 'últ. 7 días' : _dashPeriod === 'month' ? 'este mes' : 'histórico';
+
+  document.getElementById('d-salidas').textContent  = rows.length;
+  document.getElementById('d-salidas-sub').textContent = periodLabel;
+  document.getElementById('d-kg').textContent       = totalKg.toFixed(1) + ' kg';
+  document.getElementById('d-kg-sub').textContent   = periodLabel;
+  document.getElementById('d-reps').textContent     = repsSet.size || '—';
+  document.getElementById('d-ganancia').textContent = fmt(totalNeta);
+  document.getElementById('d-ganancia').style.color = totalNeta >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('d-gan-sub').textContent  = periodLabel;
+
+  const fabMap = {};
+  rows.forEach(s => {
+    const p = parseProdString(s.prods);
+    Object.entries(p).forEach(([label, kg]) => { fabMap[label] = (fabMap[label] || 0) + kg; });
+  });
+  const fabSorted = Object.entries(fabMap).sort((a,b) => b[1] - a[1]);
+  const maxKg = fabSorted[0]?.[1] || 1;
+
+  const fabEl = document.getElementById('d-fab-list');
+  fabEl.innerHTML = fabSorted.length ? fabSorted.map(([label, kg]) => `
+    <div class="fab-row">
+      <span class="fab-name">${label}</span>
+      <div class="fab-bar-wrap"><div class="fab-bar" style="width:${Math.round(kg/maxKg*100)}%"></div></div>
+      <span class="fab-kg">${kg % 1 === 0 ? kg : kg.toFixed(1)} kg</span>
+    </div>`).join('') : '<div class="dash-empty">Sin datos en el período</div>';
+
+  renderFabChart(fabSorted.map(e=>e[0]), fabSorted.map(e=>e[1]));
+  renderTrendChart(rows);
+
+  const repMap = {};
+  rows.forEach(s => {
+    const k = s.rep || '?';
+    if (!repMap[k]) repMap[k] = { neta: 0, salidas: 0, kg: 0, zona: s.zona || '—' };
+    repMap[k].neta    += s.neta;
+    repMap[k].salidas += 1;
+    repMap[k].kg      += s.totKg;
+  });
+  const ranking = Object.entries(repMap).sort((a,b) => b[1].neta - a[1].neta);
+  document.getElementById('d-rep-list').innerHTML = ranking.length
+    ? ranking.map(([name, d], i) => `
+      <div class="rep-row">
+        <span class="rep-pos">${i+1}</span>
+        <div class="rep-info">${name}<small>${d.zona} · ${d.salidas} salida${d.salidas!==1?'s':''} · ${d.kg.toFixed(1)} kg</small></div>
+        <span class="rep-neta" style="color:${d.neta>=0?'var(--green)':'var(--red)'}">${fmt(d.neta)}</span>
+      </div>`).join('')
+    : '<div class="dash-empty">Cerrá jornadas para ver el ranking</div>';
+}
 // ══ GENERAR REMITOS ══
 function generarRemitos() {
   const s = lastState;

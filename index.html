@@ -736,7 +736,8 @@ async function getGoogleToken() {
     if (_accessToken && Date.now() < _tokenExpiry) return _accessToken;
     return new Promise((resolve) => {
           _pendingResolve = resolve;
-          _tokenClient.requestAccessToken({ prompt: '' });
+    const promptMode = _accessToken ? '' : 'consent';
+    _tokenClient.requestAccessToken({ prompt: promptMode });
     });
 }
   async function cerrarJornada() {  const s = lastState;

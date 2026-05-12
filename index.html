@@ -335,11 +335,10 @@ body.dark footer span{color:var(--brand)}
     <div class="tab-panel" id="panel-clientes">
       <div class="sec">Carga masiva desde Excel</div>
       <div class="upload-template card">
-        <strong>Formato del Excel para carga masiva:</strong><br>
+        <strong>Plantilla de carga masiva:</strong><br>
+        Descargá el archivo Excel desde Google Drive. Completalo y subilo acá.<br>
         Columnas: <strong>Cliente · Dirección · Producto_ID · Cantidad · Forma_Pago · Observaciones</strong><br>
-        Ejemplo: <code>Kiosco Sol · Av. Mitre 100 · c1 · 2 · Efectivo · </code><br>
-        <a href="#" onclick="descargarPlantilla()" style="color:var(--brand-darker);font-weight:800;font-size:12px">⬇ Descargar plantilla Excel</a>
-      </div>
+        <a href="#" onclick="descargarPlantilla()" style="color:var(--brand-darker);font-weight:800;font-size:12px">⬇ Descargar plantilla Excel (.xlsx)</a></div>
       <div class="upload-area" onclick="document.getElementById('file-input').click()">
         <i class="ti ti-table-import"></i>
         <p>Tocá para subir tu planilla del día</p>
@@ -736,11 +735,7 @@ function procesarArchivo(input) {
 }
 
 function descargarPlantilla() {
-  const csv = 'Cliente,Direccion,Producto_ID,Cantidad,Forma_Pago,Observaciones\nKiosco Sol,Av Mitre 100,c1,2,Efectivo,\nSuper Norte,San Martin 250,r05cb,1,Transferencia,Cheddar y Bacon\nLa Esquina,Belgrano 33,r05co,2,Efectivo,\nAlmacén Verde,Rivadavia 88,r1az,1,Transferencia,Queso Azul';
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  a.download = 'ChipaGuru_Plantilla_Carga.csv';
-  a.click();
+  window.open('https://docs.google.com/spreadsheets/d/1-DuBtAmX7uQ_j3BTmBGaUPfvHZt5FdgnnsxgQm9uimw/export?format=xlsx', '_blank');
 }
 
 // ══ UI HELPERS ══

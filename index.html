@@ -604,12 +604,14 @@ function doLogin() {
             client_id: CONFIG.GOOGLE_CLIENT_ID,
             scope: 'https://www.googleapis.com/auth/spreadsheets',
             callback: async (resp) => {
-                    if (resp.error) {
-                              if (_pendingResolve) { _pendingResolve(null); _pendingResolve = null; }
-                              toast('Error Google: ' + resp.error);
-                              return;
-                    _accessToken = resp.access_token;
-                    _tokenExpiry = Date.now() + (parseInt(resp.expires_in, 10) - 60) * 1000;
+        if (resp.error) {
+        console.error('GIS error:', resp.error);
+        toast('⚠ Google error: ' + resp.error);
+        if (_pendingResolve) { _pendingResolve(null); _pendingResolve = null; }
+        return;
+      _accessToken = resp.access_token;
+      _tokenExpiry = Date.now() + (parseInt(resp.expires_in, 10) - 60) * 1000;
+      toast('Google conectado ✓');
                     if (_pendingResolve) { _pendingResolve(_accessToken); _pendingResolve = null; return; }
                     SESSION = { user: 'google', name: 'Administrador', role: 'admin', zona: 'Todas' };
                               localStorage.setItem('cg_session', JSON.stringify(SESSION));

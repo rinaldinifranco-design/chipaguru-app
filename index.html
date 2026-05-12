@@ -20,7 +20,7 @@
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleAuth()"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<style>h
+<style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --brand:#F0C97E;--brand-dark:#C9A055;--brand-darker:#A07830;
@@ -820,12 +820,12 @@ async function getGoogleToken(showPopup = false) {
   try {
     const token = await getGoogleToken(true);
     if (!token) { toast('⚠ Autorizá con Google para guardar. Tocá el ícono 🔁 o cerrá y reingresá.'); return; }
-    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:A:append?valueInputOption=USER_ENTERED`, {
+    const _r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:A:append?valueInputOption=USER_ENTERED`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: [fila] })
     });
-    // Guardar clientes como frecuentes
+    if(!_r.ok)throw new Error('HTTP '+_r.status); // Guardar clientes como frecuentes
     s.clientData.filter(c => c.items.length > 0).forEach(c => {
       const exists = FREQ_CLIENTS.findIndex(f => f.name.toLowerCase() === c.name.toLowerCase());
       const entry = { name: c.name, addr: c.addr, pago: c.pago, obs: c.obs, items: c.items.map(i => ({ label: i.label, qty: i.qty })) };
@@ -1437,7 +1437,7 @@ async function cargarDashboard() {
   try {
     const token = await getGoogleToken();
     if (token) {
-      const resp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:P`, {
+      const resp = const _r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:P`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await resp.json();

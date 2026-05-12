@@ -19,7 +19,7 @@
     <script>function initGoogleAuth(){window._googleLibReady=true;}</script>
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleAuth()"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>h
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1487,8 +1487,8 @@ async function cargarDashboard() {
       <span class="fab-kg">${kg % 1 === 0 ? kg : kg.toFixed(1)} kg</span>
     </div>`).join('') : '<div class="dash-empty">Sin datos en el período</div>';
 
-  renderFabChart(fabSorted.map(e=>e[0]), fabSorted.map(e=>e[1]));
-  renderTrendChart(rows);
+  try { renderFabChart(fabSorted.map(e=>e[0]), fabSorted.map(e=>e[1])); } catch(_ce) {}
+  try { renderTrendChart(rows); } catch(_ce) {}
 
   const repMap = {};
   rows.forEach(s => {

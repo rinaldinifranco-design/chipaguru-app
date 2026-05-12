@@ -808,10 +808,11 @@ async function getGoogleToken(showPopup = false) {
     Math.round(s.totV),
     Math.round(s.costoNafta),
     Math.round(s.neta),
-    s.prodRows.map(r => r.label + ':' + r.kg.toFixed(1) + 'kg').join(' | ')
+    s.prodRows.map(r => r.label + ':' + r.kg.toFixed(1) + 'kg').join(' | '),
+    Math.round(s.totC||0)
   ];
   try {
-    const token = await getGoogleToken();
+    const token = await getGoogleToken(true);
     if (!token) throw new Error('Sin token');
     await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:A:append?valueInputOption=USER_ENTERED`, {
       method: 'POST',
@@ -958,10 +959,11 @@ async function enviarJornadaASheets(idx) {
     (s.kgClasico||0).toFixed(1), s.cant||0,
     Math.round(s.mBonus||0), Math.round(s.totV||0),
     Math.round(s.costoNafta||0), Math.round(s.neta||0),
-    (s.prodRows||[]).map(r => r.label+':'+(r.kg||0).toFixed(1)+'kg').join(' | ')
+    (s.prodRows||[]).map(r => r.label+':'+(r.kg||0).toFixed(1)+'kg').join(' | '),
+    Math.round(s.totC||0)
   ];
   try {
-    const token = await getGoogleToken();
+    const token = await getGoogleToken(true);
     if (!token) throw new Error('Sin token');
     const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets/' + CONFIG.SHEET_HISTORIAL + '/values/A:A:append?valueInputOption=USER_ENTERED', {
       method: 'POST',
@@ -1259,7 +1261,7 @@ function recalc() {
   const bruta = totV + mBonus, neta = bruta - costoNafta, netoKg = totKg > 0 ? neta / totKg : 0;
   const nCli = clients.filter(c => c.items.length > 0).length;
 
-  lastState = { fecha: fmtDate(), kmTotal, costoNafta, CKM, kgClasico, cant, pBonus, mBonus, totV, bruta, neta, netoKg, nCli, totKg, clientData, prodRows: Object.values(pMap) };
+  lastState = { fecha: fmtDate(), kmTotal, costoNafta, CKM, kgClasico, cant, pBonus, mBonus, totV, totC, bruta, neta, netoKg, nCli, totKg, clientData, prodRows: Object.values(pMap) };
 
   // Colorear selects según stock
   if (Object.keys(_stockMap).length > 0) {
@@ -1397,7 +1399,7 @@ function renderTrendChart(rows) {
   if (!rows.length) { ctx.style.display='none'; return; }
   ctx.style.display = '';
   const byDate = {};
-  rows.forEach(s => { byDate[s.fecha] = (byDate[s.fecha] || 0) + (parseFloat(s.neta) || 0); });
+  rows.forEach(s => { byDate[s.fecha] = (byDate[s.fecha] || 0) + (parseFloat(s.totalFabrica) || parseFloat(s.neta) || 0); });
   const sorted = Object.entries(byDate).sort((a,b) => {
     const pa = a[0].split('/'), pb = b[0].split('/');
     return new Date(+pa[2],+pa[1]-1,+pa[0]) - new Date(+pb[2],+pb[1]-1,+pb[0]);
@@ -1437,7 +1439,7 @@ async function cargarDashboard() {
       allRows = sheetRows.map(r => ({
         id: r[0], fecha: r[1], rep: r[3], zona: r[4],
         km: parseFloat(r[5]) || 0, nCli: parseInt(r[6]) || 0,
-        totKg: parseFloat(r[7]) || 0, neta: parseFloat(r[13]) || 0,
+        totKg: parseFloat(r[7]) || 0, neta: parseFloat(r[13]) || 0, totalFabrica: parseFloat(r[15]) || 0,
         prods: r[14] || ''
       }));
       document.getElementById('dash-sync').textContent = 'Sheets ✓';
@@ -1449,7 +1451,7 @@ async function cargarDashboard() {
     const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
     allRows = local.map(s => ({
       fecha: s.fecha, rep: s.rep || SESSION.name, zona: s.zona || '—',
-      totKg: parseFloat(s.totKg) || 0, neta: parseFloat(s.neta) || 0,
+      totKg: parseFloat(s.totKg) || 0, neta: parseFloat(s.neta) || 0, totalFabrica: parseFloat(s.totC) || 0,
       prods: (s.prodRows || []).map(r => r.label + ':' + (r.kg||0).toFixed(1) + 'kg').join(' | ')
     }));
     document.getElementById('dash-sync').textContent = 'Local';
@@ -1459,6 +1461,7 @@ async function cargarDashboard() {
   const rows = filterByPeriod(allRows);
   const totalKg   = rows.reduce((a,s) => a + s.totKg, 0);
   const totalNeta = rows.reduce((a,s) => a + s.neta,  0);
+  const totalFabrica = rows.reduce((a,s) => a + (s.totalFabrica || 0), 0);
   const repsSet   = new Set(rows.map(s => s.rep).filter(Boolean));
   const periodLabel = _dashPeriod === 'week' ? 'últ. 7 días' : _dashPeriod === 'month' ? 'este mes' : 'histórico';
 
@@ -1467,8 +1470,8 @@ async function cargarDashboard() {
   document.getElementById('d-kg').textContent       = totalKg.toFixed(1) + ' kg';
   document.getElementById('d-kg-sub').textContent   = periodLabel;
   document.getElementById('d-reps').textContent     = repsSet.size || '—';
-  document.getElementById('d-ganancia').textContent = fmt(totalNeta);
-  document.getElementById('d-ganancia').style.color = totalNeta >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('d-ganancia').textContent = fmt(totalFabrica);
+  document.getElementById('d-ganancia').style.color = totalFabrica >= 0 ? 'var(--green)' : 'var(--red)';
   document.getElementById('d-gan-sub').textContent  = periodLabel;
 
   const fabMap = {};

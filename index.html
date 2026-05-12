@@ -476,6 +476,10 @@ body.dark footer span{color:var(--brand)}
         <div class="dash-card"><div class="dash-label">Ganancia neta</div><div class="dash-val" id="d-ganancia" style="color:var(--green)">—</div><div class="dash-sub" id="d-gan-sub"></div></div>
       </div>
 
+      <!-- Historial de salidas -->
+      <div class="dash-section">📋 Últimas salidas</div>
+      <div id="d-salidas-list"><div class="dash-empty">Sin datos en el período</div></div>
+
       <!-- Producción fábrica -->
       <div class="dash-section">📦 Producción para fábrica</div>
       <div id="d-fab-list"><div class="dash-empty">Sin datos en el período</div></div>
@@ -1439,6 +1443,31 @@ async function cargarDashboard() {
         <span class="rep-neta" style="color:${d.neta>=0?'var(--green)':'var(--red)'}">${fmt(d.neta)}</span>
       </div>`).join('')
     : '<div class="dash-empty">Cerrá jornadas para ver el ranking</div>';
+
+  // Historial de salidas: tabla con últimas 15 salidas ordenadas por fecha
+  const salidasEl = document.getElementById('d-salidas-list');
+  if (salidasEl) {
+    const recent = [...rows].sort((a,b) => (b.fecha||'').localeCompare(a.fecha||'')).slice(0,15);
+    salidasEl.innerHTML = recent.length ? `<div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:4px">
+        <thead><tr style="background:var(--brand-dark);color:#fff">
+          <th style="padding:6px 8px;text-align:left;font-weight:700">Fecha</th>
+          <th style="padding:6px 8px;text-align:left;font-weight:700">Rep</th>
+          <th style="padding:6px 8px;text-align:right;font-weight:700">Kg</th>
+          <th style="padding:6px 8px;text-align:right;font-weight:700">Neta</th>
+          <th style="padding:6px 8px;text-align:left;font-weight:700">Productos</th>
+        </tr></thead>
+        <tbody>${recent.map((s,i)=>`
+          <tr style="background:${i%2===0?'var(--bg2)':'var(--card)'};border-bottom:1px solid var(--border)">
+            <td style="padding:5px 8px;white-space:nowrap">${s.fecha||'—'}</td>
+            <td style="padding:5px 8px">${s.rep||'—'}</td>
+            <td style="padding:5px 8px;text-align:right;font-weight:700">${s.totKg.toFixed(1)} kg</td>
+            <td style="padding:5px 8px;text-align:right;font-weight:700;color:var(--green)">$${Math.round(s.neta).toLocaleString('es-AR')}</td>
+            <td style="padding:5px 8px;font-size:11px;color:var(--text2)">${s.prods||'—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>` : '<div class="dash-empty">Sin datos en el período</div>';
+  }
 }
 // ══ GENERAR REMITOS ══
 function generarRemitos() {
@@ -1573,7 +1602,7 @@ function generarPedidoFabrica() {
   if (fabKgClasico > 0)
     fabRows += `<tr><td>🫓 Chipá clásico</td><td style="text-align:center;font-weight:800">${fabKgClasico.toFixed(1)} kg</td></tr>`;
   Object.entries(fabRellenos).sort().forEach(([sab, kg]) => {
-    fabRows += `<tr><td>🧀 Relleno ${sab}</td><td style="text-align:center;font-weight:800">${kg.toFixed(1)} kg</td></tr>`;
+    fabRows += `<tr><td>🧀 Relleno ${SABORES[sab] || sab}</td><td style="text-align:center;font-weight:800">${kg.toFixed(1)} kg</td></tr>`;
   });
   if (fabRellenoSurtido > 0)
     fabRows += `<tr><td>🎲 Relleno surtido / mix</td><td style="text-align:center;font-weight:800">${fabRellenoSurtido.toFixed(1)} kg</td></tr>`;

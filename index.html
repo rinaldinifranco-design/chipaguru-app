@@ -606,21 +606,25 @@ function doLogin() {
             client_id: CONFIG.GOOGLE_CLIENT_ID,
             scope: 'https://www.googleapis.com/auth/spreadsheets',
             callback: async (resp) => {
-        if (resp.error) {
-        console.error('GIS error:', resp.error);
-        toast('⚠ Google error: ' + resp.error);
-        if (_pendingResolve) { _pendingResolve(null); _pendingResolve = null; }
-        return;
-      _accessToken = resp.access_token;
-      _tokenExpiry = Date.now() + (parseInt(resp.expires_in, 10) - 60) * 1000;
-      toast('Google conectado ✓');
-          try { localStorage.setItem('cg_authed','1'); } catch(e) {}
-                    if (_pendingResolve) { _pendingResolve(_accessToken); _pendingResolve = null; return; }
-                    SESSION = { user: 'google', name: 'Administrador', role: 'admin', zona: 'Todas' };
-                              localStorage.setItem('cg_session', JSON.stringify(SESSION));
-                              bootApp();
-                    }
-            }
+              if (resp.error) {
+                console.error('GIS error:', resp.error);
+                toast('⚠ Google error: ' + resp.error);
+                if (_pendingResolve) { _pendingResolve(null); _pendingResolve = null; }
+                return;
+              }
+              _accessToken = resp.access_token;
+              _tokenExpiry = Date.now() + (parseInt(resp.expires_in, 10) - 60) * 1000;
+              toast('Google conectado ✓');
+              try { localStorage.setItem('cg_authed','1'); } catch(e) {}
+              if (_pendingResolve) { _pendingResolve(_accessToken); _pendingResolve = null; return; }
+              SESSION = { user: 'google', name: 'Administrador', role: 'admin', zona: 'Todas' };
+              localStorage.setItem('cg_session', JSON.stringify(SESSION));
+              bootApp();
+            },
+            error_callback: (err) => {
+              console.warn('GIS auth error:', err.type);
+              if (_pendingResolve) { _pendingResolve(null); _pendingResolve = null; }
+            },
       });
   }
 // Fallback: si Google cargó antes que el script de la app, lo inicializamos acá
@@ -721,7 +725,7 @@ async function getGoogleToken(showPopup = false) {
   if (_accessToken && Date.now() < _tokenExpiry) return _accessToken;
   // showPopup=true: el usuario hizo click manual → mostrar popup
   // showPopup=false: carga automática → intentar silencioso, sin molestar
-  const promptMode = showPopup ? 'consent' : '';
+  const promptMode = showPopup ? 'consent' : 'none';
   return new Promise((resolve) => {
     // Timeout de seguridad: si el callback no llega en 20s, resolver con null
     const t = setTimeout(() => { _pendingResolve = null; resolve(null); }, 20000);

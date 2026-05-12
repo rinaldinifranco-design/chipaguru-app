@@ -595,6 +595,61 @@ function doLogin() {
   toast('Verificando credenciales...');
   validarYCompletarLoginRep();
 }
+async function validarYCompletarLoginRep() {
+  const user = window._repPendingUser;
+  const pass = window._repPendingPass;
+  const err  = document.getElementById('login-error');
+
+  // Intentar primero con API key (requiere hoja con acceso publico de lectura)
+  let rows = null;
+  try {
+    const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + CONFIG.SHEET_REPRESENTANTES + '/values/A2:E100?key=' + CONFIG.SHEETS_API_KEY;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      rows = data.values || [];
+    }
+  } catch(e) {}
+
+  // Si no funciono el API key, usar OAuth
+  if (!rows) {
+    const token = await getGoogleToken(true);
+    if (!token) {
+      if (err) { err.innerText = 'No se pudo conectar con Google. Reintentar.'; err.style.display = ''; }
+      return;
+    }
+    try {
+      const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + CONFIG.SHEET_REPRESENTANTES + '/values/A2:E100';
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+      if (!res.ok) throw new Error('error ' + res.status);
+      const data = await res.json();
+      rows = data.values || [];
+    } catch(e) {
+      if (err) { err.innerText = 'Error al verificar: ' + e.message; err.style.display = ''; }
+      return;
+    }
+  }
+
+  // Validar: columnas A=usuario, B=contrasena, C=nombre, D=zona
+  const rep = rows.find(function(r) {
+    return (r[0]||'').toLowerCase().trim() === user.toLowerCase().trim()
+        && (r[1]||'').trim() === pass.trim();
+  });
+
+  if (!rep) {
+    if (err) { err.innerText = 'Usuario o contrasena incorrectos.'; err.style.display = ''; }
+    return;
+  }
+
+  SESSION = {
+    user: (rep[0] || user).trim(),
+    name: (rep[2] || user).trim(),
+    role: 'rep',
+    zona: (rep[3] || 'Sin zona').trim()
+  };
+  localStorage.setItem('cg_session', JSON.stringify(SESSION));
+  bootApp();
+}
 
 // ── Variables de estado del token Google ──
   let _tokenClient = null;

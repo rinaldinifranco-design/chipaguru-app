@@ -473,7 +473,7 @@ body.dark footer span{color:var(--brand)}
         <div class="dash-card"><div class="dash-label">Salidas</div><div class="dash-val" id="d-salidas">—</div><div class="dash-sub" id="d-salidas-sub"></div></div>
         <div class="dash-card"><div class="dash-label">Kg vendidos</div><div class="dash-val" id="d-kg">—</div><div class="dash-sub" id="d-kg-sub"></div></div>
         <div class="dash-card"><div class="dash-label">Reps activos</div><div class="dash-val" id="d-reps">—</div></div>
-        <div class="dash-card"><div class="dash-label">Ganancia neta</div><div class="dash-val" id="d-ganancia" style="color:var(--green)">—</div><div class="dash-sub" id="d-gan-sub"></div></div>
+        <div class="dash-card"><div class="dash-label">Ingreso fábrica</div><div class="dash-val" id="d-ganancia" style="color:var(--green)">—</div><div class="dash-sub" id="d-gan-sub"></div></div>
       </div>
 
       <!-- Historial de salidas -->
@@ -486,7 +486,7 @@ body.dark footer span{color:var(--brand)}
       <div class="trend-wrap" style="margin-top:.8rem"><canvas id="d-fab-chart"></canvas></div>
 
       <!-- Tendencia en el tiempo -->
-      <div class="dash-section">📈 Ganancia neta en el tiempo</div>
+      <div class="dash-section">📈 Ingreso fábrica en el tiempo</div>
       <div class="trend-wrap"><canvas id="d-trend-chart"></canvas></div>
 
       <!-- Stock actual -->
@@ -1437,7 +1437,7 @@ async function cargarDashboard() {
   try {
     const token = await getGoogleToken();
     if (token) {
-      const resp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:O`, {
+      const resp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:P`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await resp.json();
@@ -1501,13 +1501,13 @@ async function cargarDashboard() {
 
   const repMap = {};
   rows.forEach(s => {
-    const k = s.rep || '?';
+    if(s.rep==='Administrador')return; const k = s.rep || '?';
     if (!repMap[k]) repMap[k] = { neta: 0, salidas: 0, kg: 0, zona: s.zona || '—' };
     repMap[k].neta    += s.neta;
     repMap[k].salidas += 1;
     repMap[k].kg      += s.totKg;
   });
-  const ranking = Object.entries(repMap).sort((a,b) => b[1].neta - a[1].neta);
+  const ranking = Object.entries(repMap).sort((a,b) => b[1].kg - a[1].kg);
   document.getElementById('d-rep-list').innerHTML = ranking.length
     ? ranking.map(([name, d], i) => `
       <div class="rep-row">

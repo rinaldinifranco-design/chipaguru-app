@@ -226,6 +226,36 @@ body.dark .b-g{background:#0F2A1A}.body.dark .b-a{background:#2A1A08}.body.dark 
 .dash-val{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.4rem;color:var(--text)}
 .dash-sub{font-size:10px;color:var(--text3);margin-top:2px}
 .ranking-row{display:flex;align-items:center;justify-content:space-between;padding:.6rem .8rem;border-radius:10px;margin-bottom:6px;background:var(--bg2);border:1.5px solid var(--border);font-size:13px}
+/* ── HISTORIAL CARD ── */
+.hist-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.hist-header{display:flex;align-items:center;justify-content:space-between;padding:.7rem .9rem;cursor:pointer;gap:8px}
+.hist-header:hover{background:var(--bg3)}
+.hist-chevron{font-size:14px;color:var(--text3);transition:transform .2s;flex-shrink:0}
+.hist-card.open .hist-chevron{transform:rotate(180deg)}
+.hist-detail{display:none;padding:.5rem .9rem .8rem;border-top:1.5px solid var(--border)}
+.hist-card.open .hist-detail{display:block}
+.hist-client-row{display:flex;flex-direction:column;padding:.45rem 0;border-bottom:1px solid var(--border)}
+.hist-client-row:last-child{border-bottom:none}
+.hist-client-name{font-weight:800;font-size:13px}
+.hist-client-meta{font-size:11px;color:var(--text3);margin-top:1px}
+.hist-client-items{font-size:12px;color:var(--text2);margin-top:3px}
+.hist-actions{display:flex;gap:6px;margin-top:10px;justify-content:flex-end}
+.btn-cerrar-j{background:#E8F5EE;border:1.5px solid var(--green);border-radius:8px;color:var(--green);padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:4px}
+.btn-cerrar-j:hover{background:var(--green);color:#fff}
+.btn-eliminar-j{background:#FDECEA;border:1.5px solid var(--red);border-radius:8px;color:var(--red);padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:4px}
+.btn-eliminar-j:hover{background:var(--red);color:#fff}
+body.dark .btn-cerrar-j{background:#0F2A1A}
+body.dark .btn-eliminar-j{background:#2A0F0F}
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal-box{background:var(--card);border-radius:16px;padding:1.5rem;max-width:320px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.modal-title{font-size:16px;font-weight:900;margin-bottom:.5rem;color:var(--text1)}
+.modal-msg{font-size:13px;color:var(--text2);margin-bottom:1.2rem;line-height:1.5}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end}
+.modal-cancel{background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;padding:7px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;color:var(--text2)}
+.modal-confirm{border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;color:#fff}
+.modal-confirm.danger{background:var(--red)}
+.modal-confirm.success{background:var(--green)}
 .ranking-pos{font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;color:var(--brand-darker);min-width:24px}
 body.dark .ranking-pos{color:var(--brand)}
 .ranking-name{font-weight:800;color:var(--text);flex:1;padding:0 8px}
@@ -405,6 +435,18 @@ body.dark footer span{color:var(--brand)}
         <div style="text-align:center;padding:2rem;color:var(--text3);font-size:13px">
           <i class="ti ti-history" style="font-size:32px;display:block;margin-bottom:.5rem;opacity:.4"></i>
           Las jornadas cerradas aparecen acá.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MODAL CONFIRMACIÓN ── -->
+    <div class="modal-overlay" id="modal-confirm" style="display:none" onclick="if(event.target===this)cerrarModal()">
+      <div class="modal-box">
+        <div class="modal-title" id="modal-title">¿Confirmar?</div>
+        <div class="modal-msg" id="modal-msg"></div>
+        <div class="modal-btns">
+          <button class="modal-cancel" onclick="cerrarModal()">Cancelar</button>
+          <button class="modal-confirm" id="modal-ok">Aceptar</button>
         </div>
       </div>
     </div>
@@ -733,20 +775,132 @@ function cargarClienteFrecuente(idx) {
   toast('Cliente cargado: ' + c.name);
 }
 
+// ══ MODAL CONFIRMACIÓN ══
+function showConfirm({ title, msg, confirmLabel, confirmClass, onConfirm }) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-msg').textContent = msg;
+  const okBtn = document.getElementById('modal-ok');
+  okBtn.textContent = confirmLabel || 'Aceptar';
+  okBtn.className = 'modal-confirm ' + (confirmClass || 'success');
+  okBtn.onclick = () => { cerrarModal(); onConfirm(); };
+  document.getElementById('modal-confirm').style.display = 'flex';
+}
+function cerrarModal() {
+  document.getElementById('modal-confirm').style.display = 'none';
+}
+
 // ══ CARGAR HISTORIAL ══
 function cargarHistorial() {
   const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
   const el = document.getElementById('historial-list');
-  if (!local.length) return;
-  el.innerHTML = local.map((s, i) => `
-    <div class="ranking-row">
-      <div style="flex:1"><strong style="font-size:13px">${s.fecha}</strong><br>
-      <span style="font-size:11px;color:var(--text3)">${s.nCli} clientes · ${(s.totKg||0).toFixed(1)} kg · ${Math.round(s.kmTotal||0)} km</span></div>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
-        <span style="font-family:'Nunito',sans-serif;font-weight:900;color:${(s.neta||0)>=0?'var(--green)':'var(--red)'};font-size:.95rem">${fmt(s.neta||0)}</span>
-        <button class="add-item-btn" style="font-size:11px;padding:4px 10px;white-space:nowrap" onclick="editarJornada(${i})"><i class="ti ti-pencil"></i> Editar</button>
-      </div>
-    </div>`).join('');
+  if (!local.length) {
+    el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text3);font-size:13px"><i class="ti ti-history" style="font-size:32px;display:block;margin-bottom:.5rem;opacity:.4"></i>Las jornadas cerradas aparecen acá.</div>';
+    return;
+  }
+  el.innerHTML = local.map((s, i) => {
+    const clientes = (s.clientData || []).filter(c => c.items && c.items.length > 0);
+    const clientesHtml = clientes.length ? clientes.map(c => {
+      const itemsStr = c.items.map(it => it.label + ' ×' + it.qty).join(' · ');
+      const total = c.items.reduce((a, it) => a + (it.ing || 0), 0);
+      return '<div class="hist-client-row">' +
+        '<div class="hist-client-name">' + c.name + '</div>' +
+        '<div class="hist-client-meta">' + (c.addr || '—') + ' · ' + (c.pago || '—') + (total > 0 ? ' · <strong>' + fmt(total) + '</strong>' : '') + '</div>' +
+        '<div class="hist-client-items">' + itemsStr + '</div>' +
+        '</div>';
+    }).join('') : '<div style="font-size:12px;color:var(--text3);padding:.5rem 0">Sin datos de clientes</div>';
+
+    return '<div class="hist-card" id="hist-card-' + i + '">' +
+      '<div class="hist-header" onclick="toggleDetalleJornada(' + i + ')">' +
+        '<div style="flex:1;min-width:0"><strong style="font-size:13px">' + s.fecha + '</strong><br>' +
+        '<span style="font-size:11px;color:var(--text3)">' + s.nCli + ' clientes · ' + (s.totKg||0).toFixed(1) + ' kg · ' + Math.round(s.kmTotal||0) + ' km</span></div>' +
+        '<span style="font-family:Nunito,sans-serif;font-weight:900;color:' + ((s.neta||0)>=0?'var(--green)':'var(--red)') + ';font-size:.95rem;flex-shrink:0">' + fmt(s.neta||0) + '</span>' +
+        '<i class="ti ti-chevron-down hist-chevron"></i>' +
+      '</div>' +
+      '<div class="hist-detail">' + clientesHtml +
+        '<div class="hist-actions">' +
+          '<button class="add-item-btn" style="font-size:11px;padding:5px 12px" onclick="editarJornada(' + i + ')"><i class="ti ti-pencil"></i> Editar</button>' +
+          '<button class="btn-cerrar-j" onclick="confirmarCerrarJornada(' + i + ')"><i class="ti ti-cloud-upload"></i> Cerrar</button>' +
+          '<button class="btn-eliminar-j" onclick="confirmarEliminarJornada(' + i + ')"><i class="ti ti-trash"></i> Eliminar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function toggleDetalleJornada(idx) {
+  const card = document.getElementById('hist-card-' + idx);
+  if (card) card.classList.toggle('open');
+}
+
+function confirmarEliminarJornada(idx) {
+  const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
+  const s = local[idx];
+  if (!s) return;
+  showConfirm({
+    title: 'Eliminar jornada',
+    msg: '¿Querés eliminar la jornada del ' + s.fecha + '? Esta acción no se puede deshacer.',
+    confirmLabel: 'Eliminar',
+    confirmClass: 'danger',
+    onConfirm: () => {
+      const arr = JSON.parse(localStorage.getItem('cg_historial') || '[]');
+      arr.splice(idx, 1);
+      localStorage.setItem('cg_historial', JSON.stringify(arr));
+      cargarHistorial();
+      toast('Jornada eliminada');
+    }
+  });
+}
+
+function confirmarCerrarJornada(idx) {
+  const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
+  const s = local[idx];
+  if (!s) return;
+  showConfirm({
+    title: 'Cerrar jornada',
+    msg: '¿Cerrar y enviar a Sheets la jornada del ' + s.fecha + '? Se guardará en el historial definitivo.',
+    confirmLabel: 'Cerrar y enviar',
+    confirmClass: 'success',
+    onConfirm: () => enviarJornadaASheets(idx)
+  });
+}
+
+async function enviarJornadaASheets(idx) {
+  const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
+  const s = local[idx];
+  if (!s) return;
+  const fila = [
+    'SAL' + Date.now(), s.fecha,
+    s.rep || SESSION.user, s.rep || SESSION.name, SESSION.zona || '',
+    Math.round(s.kmTotal||0), s.nCli, (s.totKg||0).toFixed(1),
+    (s.kgClasico||0).toFixed(1), s.cant||0,
+    Math.round(s.mBonus||0), Math.round(s.totV||0),
+    Math.round(s.costoNafta||0), Math.round(s.neta||0),
+    (s.prodRows||[]).map(r => r.label+':'+(r.kg||0).toFixed(1)+'kg').join(' | ')
+  ];
+  try {
+    const token = await getGoogleToken();
+    if (!token) throw new Error('Sin token');
+    const res = await fetch('https://sheets.googleapis.com/v4/spreadsheets/' + CONFIG.SHEET_HISTORIAL + '/values/A:A:append?valueInputOption=USER_ENTERED', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: [fila] })
+    });
+    if (!res.ok) throw new Error('Error Sheets');
+    (s.clientData||[]).filter(c => c.items && c.items.length > 0).forEach(c => {
+      const exists = FREQ_CLIENTS.findIndex(f => f.name.toLowerCase() === c.name.toLowerCase());
+      const entry = { name: c.name, addr: c.addr, pago: c.pago, obs: c.obs, items: c.items.map(i => ({ label: i.label, qty: i.qty })) };
+      if (exists >= 0) FREQ_CLIENTS[exists] = entry; else FREQ_CLIENTS.unshift(entry);
+    });
+    FREQ_CLIENTS = FREQ_CLIENTS.slice(0, 50);
+    localStorage.setItem('cg_freq', JSON.stringify(FREQ_CLIENTS));
+    cargarFrecuentes();
+    local.splice(idx, 1);
+    localStorage.setItem('cg_historial', JSON.stringify(local));
+    cargarHistorial();
+    toast('Jornada enviada a Sheets ✓');
+  } catch(e) {
+    toast('Error al enviar: ' + e.message);
+  }
 }
 
 // ══ EDITAR JORNADA GUARDADA ══
@@ -754,27 +908,16 @@ function editarJornada(idx) {
   const local = JSON.parse(localStorage.getItem('cg_historial') || '[]');
   const s = local[idx];
   if (!s) return;
-
-  // Limpiar ruta actual
   [...clients].forEach(c => removeClient(c.id));
-
-  // Restaurar km
   const kmEl = document.getElementById('km-total');
   if (kmEl && s.kmTotal) kmEl.value = Math.round(s.kmTotal);
-
-  // Restaurar clientes con sus productos
   const clientsToLoad = (s.clientData || []).filter(c => c.items && c.items.length > 0);
   clientsToLoad.forEach(c => {
-    addClient({
-      name: c.name,
-      addr: c.addr,
-      pago: c.pago,
-      items: c.items.map(it => ({ id: it.prodId || it.id, qty: it.qty || 1 }))
-    });
+    addClient({ name: c.name, addr: c.addr, pago: c.pago,
+      items: c.items.map(it => ({ id: it.prodId || it.id, qty: it.qty || 1 })) });
   });
-
   showTab('ruta');
-  toast(`Jornada ${s.fecha} cargada — editá y volvé a cerrar cuando esté lista`);
+  toast('Jornada ' + s.fecha + ' cargada — editá y volvé a cerrar cuando esté lista');
 }
 // ══ CARGA MASIVA DESDE EXCEL ══
 function procesarArchivo(input) {

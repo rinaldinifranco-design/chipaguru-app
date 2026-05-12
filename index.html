@@ -430,8 +430,18 @@ let PRODS = [
   {id:'cm2', cat:'Clásico mayorista', label:'Mayorista 20–60 kg (x kg)',kg:1,    pventa:8500,  costo:8100,  bonus:true},
   {id:'cm3', cat:'Clásico mayorista', label:'Mayorista 60–100 kg (x kg)',kg:1,   pventa:8300,  costo:8100,  bonus:true},
   {id:'cm4', cat:'Clásico mayorista', label:'Mayorista +100 kg (x kg)', kg:1,   pventa:8150,  costo:8100,  bonus:true},
-  {id:'r05', cat:'Relleno público',   label:'Relleno ½ kg',             kg:0.5,  pventa:8600,  costo:5600,  bonus:false},
-  {id:'r1',  cat:'Relleno público',   label:'Relleno 2×½ kg',           kg:1,    pventa:15990, costo:11200, bonus:false},
+    {id:'r05cb',cat:'Relleno público',label:'Relleno Cheddar y Bacon ½ kg',   kg:0.5,pventa:8600, costo:5600, bonus:false},
+  {id:'r05co',cat:'Relleno público',label:'Relleno Cocido ½ kg',             kg:0.5,pventa:8600, costo:5600, bonus:false},
+  {id:'r05cr',cat:'Relleno público',label:'Relleno Crudo ½ kg',              kg:0.5,pventa:8600, costo:5600, bonus:false},
+  {id:'r05az',cat:'Relleno público',label:'Relleno Queso Azul ½ kg',         kg:0.5,pventa:8600, costo:5600, bonus:false},
+  {id:'r05sl',cat:'Relleno público',label:'Relleno Salame ½ kg',             kg:0.5,pventa:8600, costo:5600, bonus:false},
+  {id:'r05cq',cat:'Relleno público',label:'Relleno Cuatro Quesos ½ kg',      kg:0.5,pventa:8600, costo:5600, bonus:false},
+  {id:'r1cb', cat:'Relleno público',label:'Relleno Cheddar y Bacon 2×½ kg', kg:1,  pventa:15990,costo:11200,bonus:false},
+  {id:'r1co', cat:'Relleno público',label:'Relleno Cocido 2×½ kg',          kg:1,  pventa:15990,costo:11200,bonus:false},
+  {id:'r1cr', cat:'Relleno público',label:'Relleno Crudo 2×½ kg',           kg:1,  pventa:15990,costo:11200,bonus:false},
+  {id:'r1az', cat:'Relleno público',label:'Relleno Queso Azul 2×½ kg',      kg:1,  pventa:15990,costo:11200,bonus:false},
+  {id:'r1sl', cat:'Relleno público',label:'Relleno Salame 2×½ kg',          kg:1,  pventa:15990,costo:11200,bonus:false},
+  {id:'r1cq', cat:'Relleno público',label:'Relleno Cuatro Quesos 2×½ kg',   kg:1,  pventa:15990,costo:11200,bonus:false},
   {id:'rm5', cat:'Relleno mayorista', label:'Rellenos mix 5 kg',        kg:5,    pventa:72500, costo:54000, bonus:false},
   {id:'rm10',cat:'Relleno mayorista', label:'Rellenos mix 10 kg',       kg:10,   pventa:133000,costo:107000,bonus:false},
   {id:'p1',  cat:'Pan de chipa',      label:'Pan chipa 1 pack (4u)',    kg:0.2,  pventa:12100, costo:7400,  bonus:false},
@@ -726,7 +736,7 @@ function procesarArchivo(input) {
 }
 
 function descargarPlantilla() {
-  const csv = 'Cliente,Direccion,Producto_ID,Cantidad,Forma_Pago,Observaciones\nKiosco Sol,Av Mitre 100,c1,2,Efectivo,\nSuper Norte,San Martin 250,c2,1,Transferencia,Cliente fijo\n';
+  const csv = 'Cliente,Direccion,Producto_ID,Cantidad,Forma_Pago,Observaciones\nKiosco Sol,Av Mitre 100,c1,2,Efectivo,\nSuper Norte,San Martin 250,r05cb,1,Transferencia,Cheddar y Bacon\nLa Esquina,Belgrano 33,r05co,2,Efectivo,\nAlmacén Verde,Rivadavia 88,r1az,1,Transferencia,Queso Azul';
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = 'ChipaGuru_Plantilla_Carga.csv';

@@ -1396,7 +1396,7 @@ function generarPedidoFabrica() {
   <table><thead><tr><th>Cliente</th><th>Dirección</th><th>Productos</th><th style="text-align:right">Total venta</th><th>Pago</th></tr></thead>
   <tbody>${s.clientData.filter(c=>c.items.length>0).map(c=>`<tr><td><strong>${c.name}</strong></td><td style="font-size:11px">${c.addr||'—'}</td><td style="font-size:11px">${c.items.map(i=>i.label+'×'+i.qty).join(', ')}</td><td style="text-align:right;font-weight:800">${fmt(c.items.reduce((a,i)=>a+i.ing,0))}</td><td style="font-size:11px">${c.pago}</td></tr>`).join('')}</tbody></table>
   <div class="firma"><div class="fl">Firma del representante</div><div class="fl">Firma / sello fábrica</div></div>
-  <script>window.onload=()=>window.print()</script></body></html>`;
+  <script>window.onload=()=>window.print()<\/script></body></html>`;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   a.download = `ChipaGuru_PedidoFabrica_${s.fecha.replace(/\//g,'-')}.html`;

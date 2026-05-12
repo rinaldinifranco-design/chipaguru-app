@@ -920,7 +920,7 @@ function recalc() {
       cG += gain; cK += kgV; cC += cos; totV += gain; totC += cos; totKg += kgV;
       items.push({ label: p.label, qty: q, ing, cos, kgV, gain, bonus: p.bonus, pventa: p.pventa });
       dRows.push(`<div class="drow"><div class="dprod">${p.label} × ${q}<span class="dtag">${p.bonus ? 'aplica bonus ✓' : 'sin bonus'}</span></div><div class="dnum">${fmt(ing)}</div><div class="dnum">${fmt(cos)}</div><div class="${gain >= 0 ? 'dpos' : 'dneg'}">${fmt(gain)}</div></div>`);
-      if (!pMap[p.id]) pMap[p.id] = { label: p.label, pventa: p.pventa, costo: p.costo, ing: 0, cos: 0, gan: 0, uni: 0, kg: 0 };
+      if (!pMap[p.id]) pMap[p.id] = { id: p.id, cat: p.cat, label: p.label, pventa: p.pventa, costo: p.costo, ing: 0, cos: 0, gan: 0, uni: 0, kg: 0 };
       pMap[p.id].ing += ing; pMap[p.id].cos += cos; pMap[p.id].gan += gain; pMap[p.id].uni += q; pMap[p.id].kg += kgV;
     });
     const name = document.getElementById('name-' + c.id)?.value || 'Cliente';
@@ -1157,12 +1157,54 @@ function _ejecutarRemitos() {
 function generarPedidoFabrica() {
   const s = lastState;
   if (!s.nCli) { toast('Cargá clientes primero'); return; }
+
+  // ── Agregación para preparación de fábrica ──
+  const SABORES = { cb:'Cheddar y Bacon', co:'Cocido', cr:'Crudo', az:'Queso Azul', sl:'Salame', cq:'Cuatro Quesos' };
+  const SABS = Object.keys(SABORES);
+  let fabKgClasico = 0;
+  const fabRellenos = {};   // sabor → kg
+  let fabRellenoSurtido = 0;
+  const fabPan = [];        // {label, uni}
+
+  s.prodRows.forEach(r => {
+    const id = r.id || '', cat = r.cat || '', suf = id.slice(-2);
+    if (cat.startsWith('Clásico')) {
+      fabKgClasico += r.kg;
+    } else if ((id.startsWith('r05') || id.startsWith('r1')) && SABS.includes(suf)) {
+      fabRellenos[SABORES[suf]] = (fabRellenos[SABORES[suf]] || 0) + r.kg;
+    } else if (cat === 'Relleno mayorista' || id === 'rm5' || id === 'rm10' || id === 'r05' || id === 'r1') {
+      fabRellenoSurtido += r.kg;
+    } else if (id === 'pr1') {
+      fabRellenoSurtido += r.uni * 2;
+    } else if (id === 'pr2') {
+      fabRellenoSurtido += r.uni * 2;
+      fabKgClasico += r.uni * 1;
+    } else if (cat === 'Pan de chipa' || cat === 'Pan mayorista') {
+      fabPan.push({ label: r.label, uni: r.uni });
+    }
+  });
+
+  // Filas de la sección "Preparación para fábrica"
+  let fabRows = '';
+  if (fabKgClasico > 0)
+    fabRows += `<tr><td>🫓 Chipá clásico</td><td style="text-align:center;font-weight:800">${fabKgClasico.toFixed(1)} kg</td></tr>`;
+  Object.entries(fabRellenos).sort().forEach(([sab, kg]) => {
+    fabRows += `<tr><td>🧀 Relleno ${sab}</td><td style="text-align:center;font-weight:800">${kg.toFixed(1)} kg</td></tr>`;
+  });
+  if (fabRellenoSurtido > 0)
+    fabRows += `<tr><td>🎲 Relleno surtido / mix</td><td style="text-align:center;font-weight:800">${fabRellenoSurtido.toFixed(1)} kg</td></tr>`;
+  fabPan.forEach(p => {
+    fabRows += `<tr><td>🍞 ${p.label}</td><td style="text-align:center;font-weight:800">${p.uni} u</td></tr>`;
+  });
+
+  // ── Detalle comercial ──
   const rows = s.prodRows.sort((a,b) => b.kg - a.kg).map(r =>
     `<tr><td>${r.label}</td><td style="text-align:center;font-weight:800">${r.uni}</td><td style="text-align:center">${r.kg.toFixed(1)} kg</td><td style="text-align:right">${fmt(r.costo)}</td><td style="text-align:right;font-weight:800">${fmt(r.cos)}</td></tr>`
   ).join('');
   const totalCosto = s.prodRows.reduce((a,r) => a+r.cos, 0);
+
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido Fábrica · ${s.fecha}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet"><!-- Google Identity Services — OAuth 2.0 para Sheets API -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
   <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Nunito',sans-serif;padding:15mm;color:#3A2A0A;max-width:210mm;margin:0 auto}
   .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8mm;padding-bottom:4mm;border-bottom:3px solid #F0C97E}
   .logo{background:#F0C97E;border-radius:10px;padding:6px 14px;font-weight:900;font-size:15px;color:#fff;line-height:1.1;text-align:center}
@@ -1171,6 +1213,8 @@ function generarPedidoFabrica() {
   table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:5mm}
   thead tr{background:#F0C97E}thead th{padding:6px 9px;text-align:left;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:#fff}
   tbody tr{border-bottom:1px solid #F7F0E4}tbody td{padding:7px 9px;color:#3A2A0A}
+  .fab-table thead tr{background:#3A2A0A}.fab-table thead th{color:#F0C97E}
+  .fab-table tbody tr:nth-child(even){background:#FBF4E8}
   .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:3mm;margin-bottom:5mm}
   .sc{border:1.5px solid #F0C97E;border-radius:8px;padding:3mm;text-align:center}
   .sc .sl{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#9A7848;font-weight:800;margin-bottom:2px}
@@ -1182,24 +1226,28 @@ function generarPedidoFabrica() {
   @media print{body{padding:8mm}}</style></head><body>
   <div class="hdr"><div class="logo">CHIPÁ<br>GURÚ</div><div><h1>Pedido a Fábrica</h1><p class="sub">Fecha: ${s.fecha} · Rep: ${SESSION.name} · ${SESSION.zona}</p></div></div>
   <div class="summary">
+    <div class="sc"><div class="sl">Clientes</div><div class="sv">${s.nCli}</div></div>
     <div class="sc"><div class="sl">Kg totales</div><div class="sv">${s.totKg.toFixed(1)}</div></div>
     <div class="sc"><div class="sl">Costo pedido</div><div class="sv">${fmt(totalCosto)}</div></div>
   </div>
-  <h2>Detalle del pedido</h2>
+  <h2>📦 Preparación para fábrica</h2>
+  <table class="fab-table"><thead><tr><th>Producto</th><th style="text-align:center">Cantidad a preparar</th></tr></thead>
+  <tbody>${fabRows}</tbody></table>
+  <h2>Detalle comercial</h2>
   <table><thead><tr><th>Producto</th><th style="text-align:center">Unidades</th><th style="text-align:center">Kg</th><th style="text-align:right">Precio unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
   <tbody>${rows}</tbody>
   <tfoot><tr style="background:#FBF4E8;font-weight:800"><td colspan="2">TOTAL</td><td style="text-align:center">${s.totKg.toFixed(1)} kg</td><td></td><td style="text-align:right;font-size:14px;color:#A07830">${fmt(totalCosto)}</td></tr></tfoot></table>
   <div class="bonus"><strong>Bonificación:</strong> ${s.kgClasico.toFixed(1)} kg clásico → <strong>${s.cant} kg bonus</strong> × ${fmt(s.pBonus)} = descuento <strong>${fmt(s.mBonus)}</strong><br>Total a pagar a fábrica: <strong style="font-size:15px">${fmt(totalCosto - s.mBonus)}</strong></div>
-  <h2>Resumen de preparación</h2>
-  <table><thead><tr><th>Producto</th><th style="text-align:center">Unidades</th><th style="text-align:center">Kg a preparar</th></tr></thead><tbody>${s.prodRows.sort((a,b)=>b.kg-a.kg).map(r=>`<tr><td>${r.label}</td><td style="text-align:center;font-weight:800">${r.uni}</td><td style="text-align:center;font-weight:800">${r.kg.toFixed(1)}</td></tr>`).join('')}</tbody><tfoot><tr style="background:#E8F4FB;font-weight:800"><td colspan="2">TOTAL GENERAL</td><td style="text-align:center">${s.totKg.toFixed(1)} kg</td></tr></tfoot></table>
+  <h2>Distribución por cliente</h2>
+  <table><thead><tr><th>Cliente</th><th>Dirección</th><th>Productos</th><th style="text-align:right">Total venta</th><th>Pago</th></tr></thead>
+  <tbody>${s.clientData.filter(c=>c.items.length>0).map(c=>`<tr><td><strong>${c.name}</strong></td><td style="font-size:11px">${c.addr||'—'}</td><td style="font-size:11px">${c.items.map(i=>i.label+'×'+i.qty).join(', ')}</td><td style="text-align:right;font-weight:800">${fmt(c.items.reduce((a,i)=>a+i.ing,0))}</td><td style="font-size:11px">${c.pago}</td></tr>`).join('')}</tbody></table>
   <div class="firma"><div class="fl">Firma del representante</div><div class="fl">Firma / sello fábrica</div></div>
-  <script>window.onload=()=>window.print()<\/script></body></html>`;
+  <script>window.onload=()=>window.print()</script></body></html>`;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   a.download = `ChipaGuru_PedidoFabrica_${s.fecha.replace(/\//g,'-')}.html`;
   a.click();
 }
-
 function generarResumenDia() {
   const s = lastState;
   if (!s.nCli) { toast('Cargá clientes primero'); return; }

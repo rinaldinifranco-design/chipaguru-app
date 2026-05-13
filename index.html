@@ -385,7 +385,7 @@ body.dark footer span{color:var(--brand)}
 
       <div class="sec">Detalle por producto</div>
       <div class="card"><div class="tw"><table>
-        <thead><tr><th>Producto</th><th>Unid.</th><th>P.venta</th><th>Costo</th><th>Ingreso</th><th>Ganancia</th><th>Margen</th></tr></thead>
+        <thead><tr><th>Producto</th><th>Unid.</th><th>P.venta</th><th>Costo</th><th>Ing. fábrica</th><th>Ganancia</th><th>Margen</th></tr></thead>
         <tbody id="prod-tbody"><tr><td colspan="7" style="color:var(--text3);text-align:center;padding:1rem">Sin datos todavía</td></tr></tbody>
       </table></div></div>
     </div>
@@ -473,6 +473,7 @@ body.dark footer span{color:var(--brand)}
         <div class="dash-card"><div class="dash-label">Salidas</div><div class="dash-val" id="d-salidas">—</div><div class="dash-sub" id="d-salidas-sub"></div></div>
         <div class="dash-card"><div class="dash-label">Kg vendidos</div><div class="dash-val" id="d-kg">—</div><div class="dash-sub" id="d-kg-sub"></div></div>
         <div class="dash-card"><div class="dash-label">Reps activos</div><div class="dash-val" id="d-reps">—</div></div>
+        <div class="dash-card"><div class="dash-label">Ing. fábrica</div><div class="dash-val" id="d-fabrica" style="color:var(--brand-darker)">—</div><div class="dash-sub" id="d-fab-kpi-sub"></div></div>
         <div class="dash-card"><div class="dash-label">Ingreso fábrica</div><div class="dash-val" id="d-ganancia" style="color:var(--green)">—</div><div class="dash-sub" id="d-gan-sub"></div></div>
       </div>
 
@@ -1284,6 +1285,7 @@ function recalc() {
     <div class="m"><div class="ml">Clientes</div><div class="mv y">${nCli}</div></div>
     <div class="m"><div class="ml">Km</div><div class="mv w">${Math.round(kmTotal)}</div></div>
     <div class="m"><div class="ml">Kg vendidos</div><div class="mv w">${totKg.toFixed(1)}</div></div>
+    <div class="m"><div class="ml">Ing. fábrica</div><div class="mv w">${fmt(totC)}</div></div>
     <div class="m"><div class="ml">Gan. ventas</div><div class="mv w">${fmt(totV)}</div></div>
     <div class="m"><div class="ml">Bonus</div><div class="mv g">${fmt(mBonus)}</div></div>
     <div class="m"><div class="ml">Nafta</div><div class="mv r">${fmt(costoNafta)}</div></div>
@@ -1297,7 +1299,7 @@ function recalc() {
   const rows = Object.values(pMap).sort((a, b) => b.gan - a.gan);
   document.getElementById('prod-tbody').innerHTML = rows.length === 0
     ? '<tr><td colspan="7" style="color:var(--text3);text-align:center;padding:1rem">Sin datos todavía</td></tr>'
-    : rows.map((r, i) => { const m = r.ing > 0 ? Math.round(r.gan / r.ing * 100) : 0; return `<tr class="${i === 0 ? 'best' : ''}"><td>${r.label}</td><td>${r.uni}</td><td>${fmt(r.pventa)}</td><td>${fmt(r.costo)}</td><td>${fmt(r.ing)}</td><td>${fmt(r.gan)}</td><td><span class="badge ${m >= 30 ? 'b-g' : m >= 15 ? 'b-a' : 'b-r'}">${m}%</span></td></tr>`; }).join('');
+    : rows.map((r, i) => { const m = r.ing > 0 ? Math.round(r.gan / r.ing * 100) : 0; return `<tr class="${i === 0 ? 'best' : ''}"><td>${r.label}</td><td>${r.uni}</td><td>${fmt(r.pventa)}</td><td>${fmt(r.costo)}</td><td>${fmt(r.cos)}</td><td>${fmt(r.gan)}</td><td><span class="badge ${m >= 30 ? 'b-g' : m >= 15 ? 'b-a' : 'b-r'}">${m}%</span></td></tr>`; }).join('');
 }
 
 // ══ DASHBOARD (admin) ══
@@ -1490,6 +1492,8 @@ async function cargarDashboard() {
   document.getElementById('d-kg').textContent       = totalKg.toFixed(1) + ' kg';
   document.getElementById('d-kg-sub').textContent   = periodLabel;
   document.getElementById('d-reps').textContent     = activeRepsCount !== null ? (activeRepsCount || '—') : (repsSet.size || '—');
+  document.getElementById('d-fabrica').textContent  = totalFabrica > 0 ? fmt(totalFabrica) : '—';
+  document.getElementById('d-fab-kpi-sub').textContent = periodLabel;
   document.getElementById('d-ganancia').textContent = fmt(totalFabrica);
   document.getElementById('d-ganancia').style.color = totalFabrica >= 0 ? 'var(--green)' : 'var(--red)';
   document.getElementById('d-gan-sub').textContent  = periodLabel;

@@ -1471,11 +1471,25 @@ async function cargarDashboard() {
   const repsSet   = new Set(rows.map(s => s.rep).filter(Boolean));
   const periodLabel = _dashPeriod === 'week' ? 'últ. 7 días' : _dashPeriod === 'month' ? 'este mes' : 'histórico';
 
+  // ── Reps activos desde Sheets 04 (columna E = SI/NO) ──
+  let activeRepsCount = null;
+  try {
+    const tkReps = await getGoogleToken();
+    if (tkReps) {
+      const repsResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_REPRESENTANTES}/values/A:E`, {
+        headers: { Authorization: `Bearer ${tkReps}` }
+      });
+      const repsData = await repsResp.json();
+      const repsRows = (repsData.values || []).slice(1); // saltar encabezado
+      activeRepsCount = repsRows.filter(r => (r[4] || '').trim().toUpperCase() === 'SI').length;
+    }
+  } catch(e) { /* fallback: usar conteo de jornadas */ }
+
   document.getElementById('d-salidas').textContent  = rows.length;
   document.getElementById('d-salidas-sub').textContent = periodLabel;
   document.getElementById('d-kg').textContent       = totalKg.toFixed(1) + ' kg';
   document.getElementById('d-kg-sub').textContent   = periodLabel;
-  document.getElementById('d-reps').textContent     = repsSet.size || '—';
+  document.getElementById('d-reps').textContent     = activeRepsCount !== null ? (activeRepsCount || '—') : (repsSet.size || '—');
   document.getElementById('d-ganancia').textContent = fmt(totalFabrica);
   document.getElementById('d-ganancia').style.color = totalFabrica >= 0 ? 'var(--green)' : 'var(--red)';
   document.getElementById('d-gan-sub').textContent  = periodLabel;

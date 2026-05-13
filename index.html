@@ -603,6 +603,17 @@ function calcRellenosCosto(bolsas) {
   const ahorro = bolsas * cInd - costo;
   return { n20, n10, nInd, costo, ahorro };
 }
+function calcClientRellenoPventa(bolsas) {
+  if (!bolsas) return 0;
+  const pm10 = (PRODS.find(p => p.id === 'rm10') || {pventa:133000}).pventa;
+  const pm5  = (PRODS.find(p => p.id === 'rm5')  || {pventa:72500}).pventa;
+  const pInd = (PRODS.find(p => p.id === 'r05cb') || {pventa:8600}).pventa;
+  const n20 = Math.floor(bolsas / 20);
+  const r20 = bolsas - n20 * 20;
+  const n10 = Math.floor(r20 / 10);
+  const nInd = r20 - n10 * 10;
+  return n20 * pm10 + n10 * pm5 + nInd * pInd;
+}
 
 // ══ ESTADO ══
 let SESSION = JSON.parse(localStorage.getItem('cg_session') || 'null');
@@ -1293,16 +1304,22 @@ function recalc() {
 
   clients.forEach(c => {
     let cG = 0, cK = 0, cC = 0, dRows = [], items = [];
+    const cRelBolsas = c.items.reduce((s, iid) => RELLENO_HALF_IDS.includes(iid.id) ? s + (parseInt(iid.qty)||0) : s, 0);
+    const cRelIng = calcClientRellenoPventa(cRelBolsas);
     c.items.forEach(iid => {
       const p = PRODS.find(x => x.id === document.getElementById('prod-' + iid)?.value);
       const q = parseFloat(document.getElementById('qty-' + iid)?.value) || 1;
       if (!p) return;
       let ing, cos, kgV = p.kg * q, gain;
       if (RELLENO_HALF_IDS.includes(p.id)) {
-        const pairs = Math.floor(q / 2), singles = q % 2;
-        const pairP = PRODS.find(pp => pp.id === RELLENO_PAIR_MAP[p.id]);
-        const pairPventa = pairP ? pairP.pventa : p.pventa * 2;
-        ing = pairs * pairPventa + singles * p.pventa;
+        if (cRelBolsas >= 10) {
+          ing = cRelBolsas > 0 ? cRelIng * q / cRelBolsas : 0;
+        } else {
+          const pairs = Math.floor(q / 2), singles = q % 2;
+          const pairP = PRODS.find(pp => pp.id === RELLENO_PAIR_MAP[p.id]);
+          const pairPventa = pairP ? pairP.pventa : p.pventa * 2;
+          ing = pairs * pairPventa + singles * p.pventa;
+        }
         cos = q * p.costo;
         rellenoIndCosto += cos; totalRellenoBolsas += q;
       } else { ing = p.pventa * q; cos = p.costo * q; }

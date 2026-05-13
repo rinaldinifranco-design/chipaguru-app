@@ -1409,7 +1409,7 @@ function renderTrendChart(rows) {
   const sorted = Object.entries(byDate).sort((a,b) => {
     const pa = a[0].split('/'), pb = b[0].split('/');
     return new Date(+pa[2],+pa[1]-1,+pa[0]) - new Date(+pb[2],+pb[1]-1,+pb[0]);
-  });
+  = await fetch});
   _trendChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -1437,7 +1437,7 @@ async function cargarDashboard() {
   try {
     const token = await getGoogleToken();
     if (token) {
-      const resp = const _r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:P`, {
+      const resp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_HISTORIAL}/values/A:P`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await resp.json();

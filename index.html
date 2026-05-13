@@ -584,6 +584,26 @@ function agruparPorFabrica(pMap) {
   return fab;
 }
 
+// ══ RELLENO PRICING — precios por tramos de volumen ══
+const RELLENO_HALF_IDS = ['r05cb','r05co','r05cr','r05az','r05sl','r05cq','r05'];
+const RELLENO_PAIR_IDS = ['r1cb','r1co','r1cr','r1az','r1sl','r1cq','r1'];
+const RELLENO_PAIR_MAP  = {
+  'r05cb':'r1cb','r05co':'r1co','r05cr':'r1cr',
+  'r05az':'r1az','r05sl':'r1sl','r05cq':'r1cq','r05':'r1'
+};
+function calcRellenosCosto(bolsas) {
+  const c10 = (PRODS.find(p => p.id === 'rm10') || {costo:107000}).costo;
+  const c5  = (PRODS.find(p => p.id === 'rm5')  || {costo:54000}).costo;
+  const cInd = (PRODS.find(p => p.id === 'r05cb' || p.id === 'r05') || {costo:5600}).costo;
+  const n20 = Math.floor(bolsas / 20);
+  const r20 = bolsas - n20 * 20;
+  const n10 = Math.floor(r20 / 10);
+  const nInd = r20 - n10 * 10;
+  const costo = n20 * c10 + n10 * c5 + nInd * cInd;
+  const ahorro = bolsas * cInd - costo;
+  return { n20, n10, nInd, costo, ahorro };
+}
+
 // ══ ESTADO ══
 let SESSION = JSON.parse(localStorage.getItem('cg_session') || 'null');
 let darkMode = localStorage.getItem('cg_dark') === '1';
@@ -1113,7 +1133,7 @@ function fmt(n) { return '$' + Math.round(n).toLocaleString('es-AR'); }
 
 function optsHtml() {
   const cats = {};
-  PRODS.forEach(p => { if (!cats[p.cat]) cats[p.cat] = []; cats[p.cat].push(p); });
+  PRODS.forEach(p => { if (RELLENO_PAIR_IDS.includes(p.id)) return; if (!cats[p.cat]) cats[p.cat] = []; cats[p.cat].push(p); });
   return Object.entries(cats).map(([cat, ps]) =>
     '<optgroup label="' + cat + '">' + ps.map(p => {
       const hasStock = Object.keys(_stockMap).length > 0;
@@ -1267,7 +1287,7 @@ function recalc() {
     ? 'Cargá clientes con chipá clásico para ver el bonus automático.'
     : `Vendés <strong>${kgClasico.toFixed(1)} kg</strong> clásico → <strong>${cant} bonus</strong> × ${fmt(pBonus)} = descuento de <strong>${fmt(mBonus)}</strong>.`;
 
-  let totV = 0, totC = 0, totKg = 0;
+  let totV = 0, totC = 0, totKg = 0, totalRellenoBolsas = 0, rellenoIndCosto = 0;
   const pMap = {};
   const clientData = [];
 
@@ -1277,7 +1297,16 @@ function recalc() {
       const p = PRODS.find(x => x.id === document.getElementById('prod-' + iid)?.value);
       const q = parseFloat(document.getElementById('qty-' + iid)?.value) || 1;
       if (!p) return;
-      const ing = p.pventa * q, cos = p.costo * q, kgV = p.kg * q, gain = ing - cos;
+      let ing, cos, kgV = p.kg * q, gain;
+      if (RELLENO_HALF_IDS.includes(p.id)) {
+        const pairs = Math.floor(q / 2), singles = q % 2;
+        const pairP = PRODS.find(pp => pp.id === RELLENO_PAIR_MAP[p.id]);
+        const pairPventa = pairP ? pairP.pventa : p.pventa * 2;
+        ing = pairs * pairPventa + singles * p.pventa;
+        cos = q * p.costo;
+        rellenoIndCosto += cos; totalRellenoBolsas += q;
+      } else { ing = p.pventa * q; cos = p.costo * q; }
+      gain = ing - cos;
       cG += gain; cK += kgV; cC += cos; totV += gain; totC += cos; totKg += kgV;
       items.push({ prodId: p.id, label: p.label, qty: q, ing, cos, kgV, gain, bonus: p.bonus, pventa: p.pventa });
       dRows.push(`<div class="drow"><div class="dprod">${p.label} × ${q}<span class="dtag">${p.bonus ? 'aplica bonus ✓' : 'sin bonus'}</span></div><div class="dnum">${fmt(ing)}</div><div class="dnum">${fmt(cos)}</div><div class="${gain >= 0 ? 'dpos' : 'dneg'}">${fmt(gain)}</div></div>`);
@@ -1294,10 +1323,14 @@ function recalc() {
     if (dr) dr.innerHTML = dRows.join('') + (dRows.length ? `<div class="dtotal-row"><span>Total <strong>${name}</strong></span><span>${cK.toFixed(1)} kg · <strong style="color:${cG >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(cG)}</strong></span></div>` : '');
   });
 
-  const bruta = totV + mBonus, neta = bruta - costoNafta, netoKg = totKg > 0 ? neta / totKg : 0;
+  const bruta = totV + mBonus;
+  // Optimizar costo fábrica rellenos (RM10/RM5 vs individual)
+  const rellenoOpt = totalRellenoBolsas > 0 ? calcRellenosCosto(totalRellenoBolsas) : null;
+  if (rellenoOpt) { totC = totC - rellenoIndCosto + rellenoOpt.costo; }
+  const neta = bruta - costoNafta, netoKg = totKg > 0 ? neta / totKg : 0;
   const nCli = clients.filter(c => c.items.length > 0).length;
 
-  lastState = { fecha: fmtDate(), kmTotal, costoNafta, CKM, kgClasico, cant, pBonus, mBonus, totV, totC, bruta, neta, netoKg, nCli, totKg, clientData, prodRows: Object.values(agruparPorFabrica(pMap)) };
+  lastState = { fecha: fmtDate(), kmTotal, costoNafta, CKM, kgClasico, cant, pBonus, mBonus, totV, totC, bruta, neta, netoKg, nCli, totKg, totalRellenoBolsas, rellenoOpt, clientData, prodRows: Object.values(agruparPorFabrica(pMap)) };
 
   // Colorear selects según stock
   if (Object.keys(_stockMap).length > 0) {
@@ -1315,6 +1348,7 @@ function recalc() {
     <div class="m"><div class="ml">Km</div><div class="mv w">${Math.round(kmTotal)}</div></div>
     <div class="m"><div class="ml">Kg vendidos</div><div class="mv w">${totKg.toFixed(1)}</div></div>
     <div class="m"><div class="ml">Ing. fábrica</div><div class="mv w">${fmt(totC)}</div></div>
+    ${rellenoOpt && rellenoOpt.ahorro > 0 ? '<div class="m"><div class="ml">Ahorro rellenos</div><div class="mv g">-' + fmt(rellenoOpt.ahorro) + '</div></div>' : ''}
     <div class="m"><div class="ml">Gan. ventas</div><div class="mv w">${fmt(totV)}</div></div>
     <div class="m"><div class="ml">Bonus</div><div class="mv g">${fmt(mBonus)}</div></div>
     <div class="m"><div class="ml">Nafta</div><div class="mv r">${fmt(costoNafta)}</div></div>

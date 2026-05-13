@@ -385,8 +385,8 @@ body.dark footer span{color:var(--brand)}
 
       <div class="sec">Detalle por producto</div>
       <div class="card"><div class="tw"><table>
-        <thead><tr><th>Producto</th><th>Unid.</th><th>P.venta</th><th>Costo</th><th>Ing. fábrica</th><th>Ganancia</th><th>Margen</th></tr></thead>
-        <tbody id="prod-tbody"><tr><td colspan="7" style="color:var(--text3);text-align:center;padding:1rem">Sin datos todavía</td></tr></tbody>
+        <thead><tr><th>Producto</th><th>Kg total</th><th>Ing. fábrica</th><th>Ganancia</th><th>Margen</th></tr></thead>
+        <tbody id="prod-tbody"><tr><td colspan="5" style="color:var(--text3);text-align:center;padding:1rem">Sin datos todavía</td></tr></tbody>
       </table></div></div>
     </div>
 
@@ -554,6 +554,35 @@ let PRODS = [
   {id:'pr1', cat:'Promos',            label:'Promo 2 kg surtido rellenos',kg:2,  pventa:27500, costo:20300, bonus:false},
   {id:'pr2', cat:'Promos',            label:'Promo 2 kg rellenos + 1 kg clásico',kg:3,pventa:38600,costo:27400,bonus:false},
 ];
+
+// ══ FACTORY GROUP — agrupación por producto de fábrica ══
+const FACTORY_GROUP = {
+  'c1':'Chipá Clásico','c2':'Chipá Clásico','c5':'Chipá Clásico','c10':'Chipá Clásico',
+  'cm1':'Chipá Clásico','cm2':'Chipá Clásico','cm3':'Chipá Clásico','cm4':'Chipá Clásico',
+  'r05cb':'Relleno Cheddar','r1cb':'Relleno Cheddar',
+  'r05co':'Relleno Cocido','r1co':'Relleno Cocido',
+  'r05cr':'Relleno Crudo','r1cr':'Relleno Crudo',
+  'r05az':'Relleno Queso Azul','r1az':'Relleno Queso Azul',
+  'r05sl':'Relleno Salame','r1sl':'Relleno Salame',
+  'r05cq':'Relleno 4 Quesos','r1cq':'Relleno 4 Quesos',
+  'rm5':'Surtido Rellenos','rm10':'Surtido Rellenos','pr1':'Surtido Rellenos',
+  'p1':'Pan de Chipá','p2':'Pan de Chipá','p5':'Pan de Chipá',
+  'pm1':'Pan de Chipá','pm2':'Pan de Chipá',
+  'pr2':'Promo Mix','r05':'Relleno','r1':'Relleno'
+};
+function agruparPorFabrica(pMap) {
+  const fab = {};
+  Object.values(pMap).forEach(r => {
+    const grp = FACTORY_GROUP[r.id] || r.label;
+    if (!fab[grp]) fab[grp] = { label: grp, kg: 0, cos: 0, gan: 0, ing: 0, uni: 0 };
+    fab[grp].kg  += r.kg;
+    fab[grp].cos += r.cos;
+    fab[grp].gan += r.gan;
+    fab[grp].ing += r.ing;
+    fab[grp].uni += r.uni;
+  });
+  return fab;
+}
 
 // ══ ESTADO ══
 let SESSION = JSON.parse(localStorage.getItem('cg_session') || 'null');
@@ -1268,7 +1297,7 @@ function recalc() {
   const bruta = totV + mBonus, neta = bruta - costoNafta, netoKg = totKg > 0 ? neta / totKg : 0;
   const nCli = clients.filter(c => c.items.length > 0).length;
 
-  lastState = { fecha: fmtDate(), kmTotal, costoNafta, CKM, kgClasico, cant, pBonus, mBonus, totV, totC, bruta, neta, netoKg, nCli, totKg, clientData, prodRows: Object.values(pMap) };
+  lastState = { fecha: fmtDate(), kmTotal, costoNafta, CKM, kgClasico, cant, pBonus, mBonus, totV, totC, bruta, neta, netoKg, nCli, totKg, clientData, prodRows: Object.values(agruparPorFabrica(pMap)) };
 
   // Colorear selects según stock
   if (Object.keys(_stockMap).length > 0) {
@@ -1296,10 +1325,10 @@ function recalc() {
   document.getElementById('rt').textContent = nCli === 0 ? 'Agregá clientes para ver el análisis' : neta < 0 ? '✗ Esta salida no cubre los costos' : netoKg < 2000 ? '⚠ Margen ajustado' : '✓ Salida rentable';
   document.getElementById('rd').innerHTML = nCli === 0 ? 'Completá los clientes del día.' : `Ventas: <strong>${fmt(totV)}</strong> + bonus: <strong>${fmt(mBonus)}</strong> = bruta: <strong>${fmt(bruta)}</strong> − nafta: <strong>${fmt(costoNafta)}</strong> = neta: <strong>${fmt(neta)}</strong>.`;
 
-  const rows = Object.values(pMap).sort((a, b) => b.gan - a.gan);
+  const rows = Object.values(agruparPorFabrica(pMap)).sort((a, b) => b.gan - a.gan);
   document.getElementById('prod-tbody').innerHTML = rows.length === 0
-    ? '<tr><td colspan="7" style="color:var(--text3);text-align:center;padding:1rem">Sin datos todavía</td></tr>'
-    : rows.map((r, i) => { const m = r.ing > 0 ? Math.round(r.gan / r.ing * 100) : 0; return `<tr class="${i === 0 ? 'best' : ''}"><td>${r.label}</td><td>${r.uni}</td><td>${fmt(r.pventa)}</td><td>${fmt(r.costo)}</td><td>${fmt(r.cos)}</td><td>${fmt(r.gan)}</td><td><span class="badge ${m >= 30 ? 'b-g' : m >= 15 ? 'b-a' : 'b-r'}">${m}%</span></td></tr>`; }).join('');
+    ? '<tr><td colspan="5" style="color:var(--text3);text-align:center;padding:1rem">Sin datos todavía</td></tr>'
+    : rows.map((r, i) => { const m = r.ing > 0 ? Math.round(r.gan / r.ing * 100) : 0; return `<tr class="${i === 0 ? 'best' : ''}"><td>${r.label}</td><td>${r.kg.toFixed(1)}</td><td>${fmt(r.cos)}</td><td>${fmt(r.gan)}</td><td><span class="badge ${m >= 30 ? 'b-g' : m >= 15 ? 'b-a' : 'b-r'}">${m}%</span></td></tr>`; }).join('');
 }
 
 // ══ DASHBOARD (admin) ══

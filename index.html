@@ -825,7 +825,7 @@ async function getGoogleToken(showPopup = false) {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: [fila] })
     });
-    if(!_r.ok)throw new Error('HTTP '+_r.status); // Guardar clientes como frecuentes
+    if(!_r.ok){ const msg = _r.status===403 ? 'Sin permiso (403)' : _r.status===401 ? 'Sesion expirada (401)' : 'HTTP '+_r.status; throw new Error(msg); } // Guardar clientes como frecuentes
     s.clientData.filter(c => c.items.length > 0).forEach(c => {
       const exists = FREQ_CLIENTS.findIndex(f => f.name.toLowerCase() === c.name.toLowerCase());
       const entry = { name: c.name, addr: c.addr, pago: c.pago, obs: c.obs, items: c.items.map(i => ({ label: i.label, qty: i.qty })) };
@@ -976,7 +976,7 @@ async function enviarJornadaASheets(idx) {
       headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: [fila] })
     });
-    if (!res.ok) throw new Error('Error Sheets');
+    if (!res.ok) { const msg = res.status===403 ? 'Sin permiso en Sheets (403). Pedile a tu admin que comparta el Sheet con tu cuenta Google.' : res.status===401 ? 'Sesion expirada (401). Cerra y volvé a entrar.' : 'Error HTTP '+res.status; throw new Error(msg); }
     (s.clientData||[]).filter(c => c.items && c.items.length > 0).forEach(c => {
       const exists = FREQ_CLIENTS.findIndex(f => f.name.toLowerCase() === c.name.toLowerCase());
       const entry = { name: c.name, addr: c.addr, pago: c.pago, obs: c.obs, items: c.items.map(i => ({ label: i.label, qty: i.qty })) };

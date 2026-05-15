@@ -1298,7 +1298,7 @@ function recalc() {
     ? 'Cargá clientes con chipá clásico para ver el bonus automático.'
     : `Vendés <strong>${kgClasico.toFixed(1)} kg</strong> clásico → <strong>${cant} bonus</strong> × ${fmt(pBonus)} = descuento de <strong>${fmt(mBonus)}</strong>.`;
 
-  let totV = 0, totC = 0, totKg = 0, totalRellenoBolsas = 0, rellenoIndCosto = 0;
+  let totV = 0, totC = 0, totKg = 0, totalRellenoBolsas = 0, rellenoIndCosto = 0, pr1TotQty = 0, pr2TotQty = 0, clasicoSueltoKg = 0;
   const pMap = {};
   const clientData = [];
 
@@ -1324,6 +1324,9 @@ function recalc() {
         rellenoIndCosto += cos; totalRellenoBolsas += q;
       } else { ing = p.pventa * q; cos = p.costo * q; }
       gain = ing - cos;
+      if (p.id === 'pr1') pr1TotQty += q;
+      else if (p.id === 'pr2') pr2TotQty += q;
+      else if (p.cat && p.cat.includes('lásico')) clasicoSueltoKg += (p.kg || 0) * q;
       cG += gain; cK += kgV; cC += cos; totV += gain; totC += cos; totKg += kgV;
       items.push({ prodId: p.id, label: p.label, qty: q, ing, cos, kgV, gain, bonus: p.bonus, pventa: p.pventa });
       dRows.push(`<div class="drow"><div class="dprod">${p.label} × ${q}<span class="dtag">${p.bonus ? 'aplica bonus ✓' : 'sin bonus'}</span></div><div class="dnum">${fmt(ing)}</div><div class="dnum">${fmt(cos)}</div><div class="${gain >= 0 ? 'dpos' : 'dneg'}">${fmt(gain)}</div></div>`);
@@ -1340,14 +1343,21 @@ function recalc() {
     if (dr) dr.innerHTML = dRows.join('') + (dRows.length ? `<div class="dtotal-row"><span>Total <strong>${name}</strong></span><span>${cK.toFixed(1)} kg · <strong style="color:${cG >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(cG)}</strong></span></div>` : '');
   });
 
-  const bruta = totV + mBonus;
+  let bruta = totV + mBonus;
   // Optimizar costo fábrica rellenos (RM10/RM5 vs individual)
   const rellenoOpt = totalRellenoBolsas > 0 ? calcRellenosCosto(totalRellenoBolsas) : null;
   if (rellenoOpt) { totC = totC - rellenoIndCosto + rellenoOpt.costo; }
+      const optQty = Math.min(pr1TotQty, Math.floor(clasicoSueltoKg));
+      const optAhorro = optQty * 1000;
+      const clasicoFisicoTotal = clasicoSueltoKg + pr2TotQty;
+      const bonos = Math.floor(clasicoFisicoTotal / 10);
+      const bonusDescuento = bonos * 8100;
+      totC -= (optAhorro + bonusDescuento);
+      bruta += optAhorro + bonusDescuento;
   const neta = bruta - costoNafta, netoKg = totKg > 0 ? neta / totKg : 0;
   const nCli = clients.filter(c => c.items.length > 0).length;
 
-  lastState = { fecha: fmtDate(), kmTotal, costoNafta, CKM, kgClasico, cant, pBonus, mBonus, totV, totC, bruta, neta, netoKg, nCli, totKg, totalRellenoBolsas, rellenoOpt, clientData, prodRows: Object.values(agruparPorFabrica(pMap)) };
+  lastState = { fecha: fmtDate(), kmTotal, costoNafta, CKM, kgClasico, cant, pBonus, mBonus, totV, totC, bruta, neta, netoKg, nCli, totKg, totalRellenoBolsas, rellenoOpt, optQty, optAhorro, bonos, bonusDescuento, clientData, prodRows: Object.values(agruparPorFabrica(pMap)) };
 
   // Colorear selects según stock
   if (Object.keys(_stockMap).length > 0) {
@@ -1366,6 +1376,8 @@ function recalc() {
     <div class="m"><div class="ml">Kg vendidos</div><div class="mv w">${totKg.toFixed(1)}</div></div>
     <div class="m"><div class="ml">Ing. fábrica</div><div class="mv w">${fmt(totC)}</div></div>
     ${rellenoOpt && rellenoOpt.ahorro > 0 ? '<div class="m"><div class="ml">Ahorro rellenos</div><div class="mv g">-' + fmt(rellenoOpt.ahorro) + '</div></div>' : ''}
+    ${optAhorro > 0 ? '<div class="m"><div class="ml">Opt. Pr1→Pr2</div><div class="mv g">-' + fmt(optAhorro) + '</div></div>' : ''}
+    ${bonusDescuento > 0 ? '<div class="m"><div class="ml">Bono fábrica</div><div class="mv g">-' + fmt(bonusDescuento) + '</div></div>' : ''}
     <div class="m"><div class="ml">Gan. ventas</div><div class="mv w">${fmt(totV)}</div></div>
     <div class="m"><div class="ml">Bonus</div><div class="mv g">${fmt(mBonus)}</div></div>
     <div class="m"><div class="ml">Nafta</div><div class="mv r">${fmt(costoNafta)}</div></div>
